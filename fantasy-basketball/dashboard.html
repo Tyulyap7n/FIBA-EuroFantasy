@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fantasy Basketball Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>🏀 Fantasy Basketball Dashboard</h1>
+<!-- Панель турнира -->
+<div class="tournament-header">
+  <button id="rules-btn">📜 Правила турнира</button>
+  <a href="top-players.html" class="nav-btn">🔥 Лучшие игроки</a>
+  <a href="tournament-table.html" class="nav-btn">🏆 Турнирная таблица</a>
+</div>
+
+<!-- Модальное окно правил -->
+<div id="rules-modal" class="modal hidden">
+  <div class="modal-content">
+    <span id="close-rules" class="close">&times;</span>
+    <h2>Правила турнира</h2>
+    <ul>
+      <li>Играем по круговой системе.</li>
+      <li>Победа — 3 очка, ничья — 1, поражение — 0.</li>
+      <li>В команде 6 ролей: Скорер, Ассистент, Ребаундер, Чернорабочий, Всё включено, Сюрприз.</li>
+      <li>Замены — только между матчами.</li>
+      <li>Нарушения дисциплины — штраф 2 очка.</li>
+    </ul>
+  </div>
+</div>
+  </header>
+  <main>
+    <!-- Карточка игрока -->
+    <aside id="player-preview" class="player-card hidden"></aside>
+
+    <!-- Контент -->
+    <section class="content">
+<!-- Таблица игроков -->
+<div class="table-section">
+  <table>
+    <thead>
+      <tr>
+        <th>Фото</th>
+        <th>Имя</th>
+        <th>
+          Страна<br>
+          <select id="country-filter">
+            <option value="">Все</option>
+          </select>
+        </th>
+        <th>
+          Поз.<br>
+          <select id="position-filter">
+            <option value="">Все</option>
+            <option value="G">Guard (G)</option>
+            <option value="F">Forward (F)</option>
+            <option value="C">Center (C)</option>
+          </select>
+        </th>
+        <th>Очки</th>
+        <th>
+          Цена<br>
+          <select id="sort-select">
+            <option value="">Без сортировки</option>
+            <option value="price-asc">Цена ↑</option>
+            <option value="price-desc">Цена ↓</option>
+            <option value="points-asc">Очки ↑</option>
+            <option value="points-desc">Очки ↓</option>
+          </select>
+        </th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="players-grid"></tbody>
+  </table>
+
+  <div class="pagination">
+    <button id="prev-page">⬅</button>
+    <span id="page-info"></span>
+    <button id="next-page">➡</button>
+  </div>
+</div>
+    <div class="stats">
+      <span>Очки: <strong id="total-points">0</strong></span>
+      <span>Монеты: <strong id="coins-used">0</strong> / 69</span>
+    </div>
+<!-- Пул выбранных игроков -->
+<div class="pool-section">
+  <h2>Выбранные игроки</h2>
+  <div id="player-pool" class="player-pool"></div>
+</div>
+<div class="roles-section">
+  <h2>Роли</h2>
+  <div class="roles-grid">
+    <div class="role-slot" id="role-scorer" data-role-id="scorer" data-role-name="Скорер" data-role-desc="Игрок, набирающий больше всего очков в команде.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Скорер</strong></div>
+        <div class="role-back"><strong>Скорер</strong><p>Игрок, набирающий больше всего очков в команде.</p></div>
+      </div>
+    </div>
+    <div class="role-slot" id="role-assistant" data-role-id="assistant" data-role-name="Ассистент" data-role-desc="Главный разыгрывающий, отдаёт много результативных передач.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Ассистент</strong></div>
+        <div class="role-back"><strong>Ассистент</strong><p>Главный разыгрывающий, отдаёт много результативных передач.</p></div>
+      </div>
+    </div>
+    <div class="role-slot" id="role-rebounder" data-role-id="rebounder" data-role-name="Ребаундер" data-role-desc="Собирает больше всего подборов под кольцом.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Ребаундер</strong></div>
+        <div class="role-back"><strong>Ребаундер</strong><p>Собирает больше всего подборов под кольцом.</p></div>
+      </div>
+    </div>
+    <div class="role-slot" id="role-dirty" data-role-id="dirty" data-role-name="Чернорабочий" data-role-desc="Делает всю невидимую работу — заслоны, борьба за мяч.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Чернорабочий</strong></div>
+        <div class="role-back"><strong>Чернорабочий</strong><p>Делает всю невидимую работу — заслоны, борьба за мяч.</p></div>
+      </div>
+    </div>
+    <div class="role-slot" id="role-allaround" data-role-id="allaround" data-role-name="Всё включено" data-role-desc="Универсальный игрок, делает всё понемногу.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Всё включено</strong></div>
+        <div class="role-back"><strong>Всё включено</strong><p>Универсальный игрок, делает всё понемногу.</p></div>
+      </div>
+    </div>
+    <div class="role-slot" id="role-surprise" data-role-id="surprise" data-role-name="Сюрприз" data-role-desc="Неожиданный герой, способный перевернуть игру.">
+      <div class="role-inner">
+        <div class="role-front"><strong>Сюрприз</strong></div>
+        <div class="role-back"><strong>Сюрприз</strong><p>Неожиданный герой, способный перевернуть игру.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
