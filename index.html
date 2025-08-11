@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вход / Регистрация — Fantasy EuroBasket</title>
+
+  <!-- Ссылка на общий CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Подключение supabase-js через модуль, если используешь CDN в скриптах,
+       либо supabaseClient.js импортируется внутри auth.js (рекомендую). -->
+</head>
+<body class="login-body">
+
+  <div class="center-wrap">
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab active" id="tab-login">Войти</button>
+        <button class="tab" id="tab-register">Регистрация</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="form-pane active">
+        <h2 class="card-title">Добро пожаловать</h2>
+        <input id="login-email" type="email" placeholder="Email" required />
+        <input id="login-password" type="password" placeholder="Пароль" required />
+        <button type="submit" class="btn btn-primary">Войти</button>
+        <p class="muted">Нет аккаунта? <a href="#" id="goto-register">Зарегистрироваться</a></p>
+        <div id="login-msg" class="msg"></div>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="register-form" class="form-pane">
+        <h2 class="card-title">Создать аккаунт</h2>
+        <input id="reg-email" type="email" placeholder="Email" required />
+        <input id="reg-password" type="password" placeholder="Пароль (мин. 6 символов)" required />
+        <button type="submit" class="btn btn-secondary">Зарегистрироваться</button>
+        <p class="muted">Уже есть аккаунт? <a href="#" id="goto-login">Войти</a></p>
+        <div id="reg-msg" class="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== Укажи свои скрипты ниже ======
+       - auth.js должен импортировать supabaseClient.js или создать клиент сам.
+       - auth.js обрабатывает submit форм, вызывает signUp / signIn и делает редирект на dashboard.html.
+       Пример подключения (если используешь ES modules):
+         <script type="module" src="./auth.js"></script>
+  ===================================== -->
+
+  <script>
+    // Простейшая логика вкладок (если auth.js не делает это сам)
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const paneLogin = document.getElementById('login-form');
+    const paneRegister = document.getElementById('register-form');
+    const gotoRegister = document.getElementById('goto-register');
+    const gotoLogin = document.getElementById('goto-login');
+
+    function showPane(pane) {
+      paneLogin.classList.remove('active');
+      paneRegister.classList.remove('active');
+      tabLogin.classList.remove('active');
+      tabRegister.classList.remove('active');
+
+      if (pane === 'login') {
+        paneLogin.classList.add('active');
+        tabLogin.classList.add('active');
+      } else {
+        paneRegister.classList.add('active');
+        tabRegister.classList.add('active');
+      }
+    }
+
+    tabLogin.addEventListener('click', () => showPane('login'));
+    tabRegister.addEventListener('click', () => showPane('register'));
+    gotoRegister.addEventListener('click', e => { e.preventDefault(); showPane('register'); });
+    gotoLogin.addEventListener('click', e => { e.preventDefault(); showPane('login'); });
+  </script>
+
+  <!-- Подключи свой auth.js (отключено — включи после добавления файла)
+  <script type="module" src="./auth.js"></script>
+  -->
+
+</body>
+</html>
