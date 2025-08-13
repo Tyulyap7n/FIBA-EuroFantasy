@@ -38,6 +38,7 @@ let selectedRoles = {}; // { roleName: playerId } — optional depending on UI
 import { supabase } from './supabaseClient.js';
 
 async function loadPlayers() {
+    console.log('Загрузка игроков...');
     const { data, error } = await supabase
         .from('players')
         .select('*')
@@ -48,21 +49,13 @@ async function loadPlayers() {
         return;
     }
 
+    console.log('Игроки из БД:', data);
     renderPlayers(data);
 }
 
-// init filters
-(function initFilters(){
-  const teams = [...new Set(players.map(p=>p.team))].sort();
-  teams.forEach(t=>{
-    const opt = document.createElement('option'); opt.value = t; opt.textContent = t;
-    teamFilter.appendChild(opt);
-  });
-})();
-
 function renderPlayers(players) {
     const tableBody = document.querySelector('#players-table tbody');
-    tableBody.innerHTML = ''; // Очищаем перед отрисовкой
+    tableBody.innerHTML = '';
 
     players.forEach(player => {
         const row = document.createElement('tr');
@@ -73,25 +66,26 @@ function renderPlayers(players) {
             <td>$${player.price || 0}</td>
             <td>-</td>
             <td>-</td>
-            <td>-</td>            
-			<td>-</td>
             <td>-</td>
+            <td>-</td>
+			<td>-</td>
             <td>-</td>
             <td>-</td>
         `;
         tableBody.appendChild(row);
     });
-
-    // Вешаем обработчики на кнопки "+"
-    document.querySelectorAll('.add-player-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const playerId = btn.dataset.id;
-            console.log(`Добавлен игрок ID: ${playerId}`);
-            // Здесь логика добавления в пул выбранных игроков
-        });
-    });
 }
 
+document.addEventListener('DOMContentLoaded', loadPlayers);
+
+// init filters
+(function initFilters(){
+  const teams = [...new Set(players.map(p=>p.team))].sort();
+  teams.forEach(t=>{
+    const opt = document.createElement('option'); opt.value = t; opt.textContent = t;
+    teamFilter.appendChild(opt);
+  });
+})();
 
 function showPreview(p){
   previewBox.classList.remove('hidden');
