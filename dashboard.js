@@ -35,6 +35,21 @@ const posFilter = document.getElementById('pos-filter');
 
 let playerPool = [];
 let selectedRoles = {}; // { roleName: playerId } — optional depending on UI
+import { supabase } from './supabaseClient.js';
+
+async function loadPlayers() {
+    const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('last_name', { ascending: true });
+
+    if (error) {
+        console.error('Ошибка загрузки игроков:', error);
+        return;
+    }
+
+    renderPlayers(data);
+}
 
 // init filters
 (function initFilters(){
@@ -45,46 +60,38 @@ let selectedRoles = {}; // { roleName: playerId } — optional depending on UI
   });
 })();
 
-function renderPlayersTable(){
-  playersGrid.innerHTML = '';
-  const team = teamFilter.value;
-  const pos = posFilter.value;
+function renderPlayers(players) {
+    const tableBody = document.querySelector('#players-table tbody');
+    tableBody.innerHTML = ''; // Очищаем перед отрисовкой
 
-  players.filter(p=>{
-    if(team && p.team !== team) return false;
-    if(pos && p.position !== pos) return false;
-    return true;
-  }).forEach(p=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><img src="${p.photo}" alt=""></td>
-      <td class="pname" data-id="${p.id}">${p.name}</td>
-      <td>${p.team}</td>
-      <td>${p.position}</td>
-      <td>${p.price}M</td>
-      <td><button class="add-btn" data-id="${p.id}">+</button></td>
-    `;
-    playersGrid.appendChild(tr);
-  });
-
-  // preview on name click
-  document.querySelectorAll('.pname').forEach(el=>{
-    el.addEventListener('click', ()=> {
-      const id = +el.dataset.id;
-      const pl = players.find(x=>x.id===id);
-      showPreview(pl);
+    players.forEach(player => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><button class="add-player-btn" data-id="${player.id}">+</button></td>
+            <td><img src="${player.photo_url || 'default-photo.png'}" alt="photo" class="player-photo"></td>
+            <td>${player.first_name} ${player.last_name}</td>
+            <td>$${player.price || 0}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>            
+			<td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        `;
+        tableBody.appendChild(row);
     });
-  });
 
-  // add button
-  document.querySelectorAll('.add-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=> {
-      const id = +btn.dataset.id;
-      const pl = players.find(x=>x.id===id);
-      addToPool(pl);
+    // Вешаем обработчики на кнопки "+"
+    document.querySelectorAll('.add-player-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const playerId = btn.dataset.id;
+            console.log(`Добавлен игрок ID: ${playerId}`);
+            // Здесь логика добавления в пул выбранных игроков
+        });
     });
-  });
 }
+
 
 function showPreview(p){
   previewBox.classList.remove('hidden');
@@ -237,6 +244,9 @@ function updateTeamPoints(){
   });
   document.getElementById('team-total').textContent = total;
 }
+document.addEventListener('DOMContentLoaded', () => {
+    loadPlayers();
+});
 
 // filters
 teamFilter.addEventListener('change', renderPlayersTable);
