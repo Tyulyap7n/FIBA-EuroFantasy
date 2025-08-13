@@ -1,69 +1,66 @@
-// Обработка регистрации
-document.getElementById("register-btn").addEventListener("click", async () => {
-    const email = document.getElementById("register-email").value.trim();
-    const password = document.getElementById("register-password").value.trim();
-    const username = document.getElementById("register-username").value.trim();
+document.addEventListener("DOMContentLoaded", () => {
+    const registerForm = document.getElementById("register-form");
+    const loginForm = document.getElementById("login-form");
 
-    if (!email || !password || !username) {
-        alert("Пожалуйста, заполните все поля");
-        return;
+    // Регистрация
+    if (registerForm) {
+        registerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById("register-email").value;
+            const password = document.getElementById("register-password").value;
+            const username = document.getElementById("register-username").value;
+
+            // 1. Создаём пользователя в auth.users
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email,
+                password
+            });
+
+            if (signUpError) {
+                alert("Ошибка регистрации: " + signUpError.message);
+                return;
+            }
+
+            const userId = signUpData.user?.id;
+            if (!userId) {
+                alert("Ошибка: не удалось получить ID пользователя");
+                return;
+            }
+
+            // 2. Записываем в public.users
+            const { error: insertError } = await supabase
+                .from("users")
+                .insert([{ id: userId, username }]);
+
+            if (insertError) {
+                alert("Ошибка записи в таблицу users: " + insertError.message);
+                return;
+            }
+
+            alert("Регистрация успешна! Проверьте почту для подтверждения.");
+        });
     }
 
-    // Регистрация в auth.users
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-    });
+    // Вход
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-    if (error) {
-        console.error("Ошибка регистрации:", error);
-        alert(error.message);
-        return;
-    }
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
 
-    const userId = data.user.id;
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
-    // Добавление в таблицу users
-    const { error: insertError } = await supabase
-        .from("users")
-        .insert([{ id: userId, username: username, role: "user" }]);
+            if (error) {
+                alert("Ошибка входа: " + error.message);
+                return;
+            }
 
-    if (insertError) {
-        console.error("Ошибка сохранения пользователя:", insertError);
-    } else {
-        alert("Регистрация прошла успешно! Подтвердите email перед входом.");
+            window.location.href = "dashboard.html";
+        });
     }
 });
-
-// Обработка входа
-document.getElementById("login-btn").addEventListener("click", async () => {
-    const email = document.getElementById("login-email").value.trim();
-    const password = document.getElementById("login-password").value.trim();
-
-    if (!email || !password) {
-        alert("Введите email и пароль");
-        return;
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    });
-
-    if (error) {
-        console.error("Ошибка входа:", error);
-        alert(error.message);
-        return;
-    }
-
-    // Перенаправление в кабинет
-    window.location.href = "dashboard.html";
-});
-
-// Проверка сессии при загрузке страницы (если пользователь уже вошёл)
-(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session && window.location.pathname.includes("index.html")) {
-        window.location.href = "dashboard.html";
-    }
-})();

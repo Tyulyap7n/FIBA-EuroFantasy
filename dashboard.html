@@ -7,19 +7,8 @@
   <link rel="stylesheet" href="style.css" />
   <!-- font: Petrov Sans (если нет локально — подключается как fallback) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Подключаем библиотеку Supabase -->
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-	<script>
-	  // !!! Замени на свои значения из Supabase → Project Settings → API
-		const SUPABASE_URL = 'https://xovxokupvsnnjtskdgvr.supabase.co';
-		const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E';
-
-	  // Создаём клиент
-	  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-	  console.log("Supabase подключён:", supabase);
-	</script>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js"></script>
   <script src="supabaseClient.js" defer></script>
   <script src="app.js" defer></script>
@@ -172,7 +161,9 @@
       </div>
     </section>
   </main>
-
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseClient.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
