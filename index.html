@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy League — Вход</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+    <script src="supabaseClient.js" defer></script>
+    <script src="auth.js" defer></script>
+</head>
+<body class="auth-page">
+
+    <header class="site-header">
+        <div class="logo-container">
+            <img src="logo-left.png" alt="Лого слева" class="logo">
+        </div>
+        <h1>Fantasy EuroBasket</h1>
+        <div class="logo-container">
+            <img src="logo-right.png" alt="Лого справа" class="logo">
+        </div>
+    </header>
+
+    <main class="auth-container">
+        <section class="auth-forms">
+            <!-- Форма входа -->
+            <div class="auth-block">
+                <h2>Вход</h2>
+                <form id="login-form">
+                    <input type="email" id="email" placeholder="Email" required>
+                    <input type="password" id="password" placeholder="Пароль" required>
+                    <button type="submit" class="btn-yellow">Войти</button>
+                </form>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div class="auth-block">
+                <h2>Регистрация</h2>
+                <form id="register-form">
+                    <input type="text" id="reg-username" placeholder="Имя пользователя" required>
+                    <input type="email" id="reg-email" placeholder="Email" required>
+                    <input type="password" id="reg-password" placeholder="Пароль" required>
+                    <button type="submit" class="btn-yellow">Зарегистрироваться</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

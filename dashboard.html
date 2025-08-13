@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fantasy EuroBasket — Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- font: Petrov Sans (если нет локально — подключается как fallback) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="supabaseClient.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+    <div class="logo-container">
+        <img src="logo-left.png" alt="Лого" class="logo">
+    </div>
+    <nav class="header-links">
+        <a href="leaderboard.html" class="header-link">Турнирная таблица</a>
+        <a href="top-players.html" class="header-link">Топ игроков</a>
+    </nav>
+    <div class="logo-container">
+        <img src="logo-right.png" alt="Лого" class="logo">
+    </div>
+</header>
+
+
+<main class="page">
+
+    <!-- Панели (Rules / Scoring / Roster) -->
+    <section class="row">
+      <div class="strip-wrapper">
+        <div class="strip"></div>
+        <button class="par-btn" data-target="rules-panel"><span>rules</span></button>
+      </div>
+      <div id="rules-panel" class="panel">
+        <h2>Правила лиги</h2>
+        <p>Бюджет команды: 60 монет. Всего 6 игроков. Менять состав можно до старта матча. Результаты считаются по выбранным ролям игрока.</p>
+      </div>
+    </section>
+
+    <section class="row">
+      <div class="strip-wrapper">
+        <div class="strip"></div>
+        <button class="par-btn" data-target="scoring-panel"><span>scoring & roles</span></button>
+      </div>
+      <div id="scoring-panel" class="panel">
+        <h2>Scoring — формулы</h2>
+        <ul class="scoring-list">
+          <li><strong>Скорер</strong> — PTS*1.5 + AST*1.5 + REB*1.3 + BLK*3 + STL*3 + TO*(-2)</li>
+          <li><strong>Ассистент</strong> — PTS + AST*3 + REB*1.3 + BLK*3 + STL*3 + TO*(-2)</li>
+          <li><strong>Ребаундер</strong> — PTS + AST*1.5 + REB*2.6 + BLK*3 + STL*3 + TO*(-2)</li>
+          <li><strong>Чернорабочий</strong> — PTS + AST*1.5 + REB*1.3 + BLK*6 + STL*6 + TO*(-2)</li>
+          <li><strong>Всё включено</strong> — базовая формула; если в каждом показателе ≥1 → +7</li>
+          <li><strong>Сюрприз</strong> — базовая формула; если итог ≥20 → +10</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ROSTER -->
+    <section class="row">
+      <div class="strip-wrapper">
+        <div class="strip"></div>
+        <button class="par-btn" data-target="roster-panel"><span>roster</span></button>
+      </div>
+
+      <div id="roster-panel" class="panel">
+        <div class="roster-top">
+          <aside id="player-preview" class="player-preview hidden">
+            <!-- PROFILE will be injected -->
+            <div class="profile-header">Профиль</div>
+            <div class="profile-circles">
+              <div class="price-circle" id="profile-price"></div>
+              <div class="flag-circle" id="profile-flag"></div>
+            </div>
+            <img id="profile-photo" class="profile-photo" src="" alt="">
+            <h3 id="profile-name"></h3>
+            <div id="profile-country-pos" class="muted"></div>
+
+            <div class="profile-stats">
+              <div class="stat-block">
+                <div class="stat-label">Среднее</div>
+                <div class="stat-value" id="profile-avg">0</div>
+              </div>
+              <div class="stat-block">
+                <div class="stat-label">Всего</div>
+                <div class="stat-value" id="profile-total">0</div>
+              </div>
+              <div class="stat-block">
+                <div class="stat-label">% ВЛ</div>
+                <div class="stat-value" id="profile-picked">0%</div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="table-wrap">
+            <div class="table-controls">
+			  <div class="filter-row">
+				<label>Country
+				  <select id="filter-country"><option value="">All</option></select>
+				</label>
+				<label>Position
+				  <select id="filter-pos"><option value="">All</option><option value="G">G</option><option value="F">F</option><option value="C">C</option></select>
+				</label>
+				<label>Sort
+				  <select id="filter-sort"><option value="">Default</option><option value="price-asc">Price ↑</option><option value="price-desc">Price ↓</option><option value="avg-desc">AVG ↓</option><option value="avg-asc">AVG ↑</option></select>
+				</label>
+			  </div>
+
+			  <!-- новый блок с потраченными монетами — в стиле таблицы -->
+				<div class="budget-counter">
+					Потрачено: <span id="spent-money">0</span> / 60$
+				</div>
+			</div>
+
+
+            <table id="players-table">
+              <thead>
+                <tr>
+                  <th>Add</th>
+                  <th>Photo</th>
+                  <th>Player</th>
+                  <th>Price</th>
+                  <th>AVG</th>
+                  <th>PTS</th>
+				  <th>3PTM</th>
+                  <th>REB</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                  <th>TO</th>
+                </tr>
+              </thead>
+              <tbody id="players-list"></tbody>
+            </table>
+
+            <div class="pagination">
+              <button id="prev-page" class="pg-btn">⬅</button>
+              <span id="page-info">1 / 1</span>
+              <button id="next-page" class="pg-btn">➡</button>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- 6 role slots under the table -->
+		<div class="starting-vi">STARTING VI</div>
+        <div class="roles-lineup">
+		  <div class="role-slot" id="slot-Scorer"><div class="empty-slot">—</div><div class="role-name">SHOOTER</div></div>
+		  <div class="role-slot" id="slot-Assistant"><div class="empty-slot">—</div><div class="role-name">ASSISTENT</div></div>
+		  <div class="role-slot" id="slot-Rebounder"><div class="empty-slot">—</div><div class="role-name">REBAUNDER</div></div>
+		  <div class="role-slot" id="slot-Stopper"><div class="empty-slot">—</div><div class="role-name">STOPPER</div></div>
+		  <div class="role-slot" id="slot-Shooter"><div class="empty-slot">—</div><div class="role-name">SHOOTER</div></div>
+		  <div class="role-slot" id="slot-Young"><div class="empty-slot">—</div><div class="role-name">YOUNG</div></div>
+		</div>
+		<button id="save-roster" class="btn-yellow">Сохранить состав</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
