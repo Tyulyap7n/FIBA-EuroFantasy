@@ -13,38 +13,13 @@
   font-style: bold;
   font-display: swap;
 }
-.site-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #633EDC;
-    padding: 10px 20px;
-    border-bottom: 4px solid #FDE600;
-}
-
-.logo {
-    height: 50px;
-}
-
-.header-links {
-    display: flex;
-    gap: 20px;
-}
-
-.header-link {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.header-link:hover {
-    color: #FDE600;
-}
-
-tbody td:nth-child(4) {
-  font-weight: bold;
-  font-size: 24px; /* увеличиваем размер */
-}
+/* Header */
+.site-header{ display:flex; justify-content:space-between; align-items:center; background-color:#633EDC; padding:10px 20px; border-bottom:4px solid #FDE600; }
+.logo{ height:50px; }
+.header-links{ display:flex; gap:20px; }
+.header-link{ color:white; text-decoration:none; font-weight:bold; }
+.header-link:hover{ color:#FDE600; }
+tbody td:nth-child(4){ font-weight:bold; font-size:24px; }
 header{
   background: var(--purple)
   font-weight: bold;
