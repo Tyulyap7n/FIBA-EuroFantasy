@@ -5,8 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fantasy League — Вход</title>
     <link rel="stylesheet" href="style.css">
+	<!-- Подключаем библиотеку Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // !!! Замени на свои значения из Supabase → Project Settings → API
+const SUPABASE_URL = 'https://xovxokupvsnnjtskdgvr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E';
+
+  // Создаём клиент
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  console.log("Supabase подключён:", supabase);
+</script>
+
     <script src="https://unpkg.com/@supabase/supabase-js"></script>
-    <script src="supabaseClient.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script>
+	  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+	</script>
+
     <script src="auth.js" defer></script>
 </head>
 <body class="auth-page">
