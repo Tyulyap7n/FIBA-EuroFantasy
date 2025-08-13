@@ -3,56 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy League — Вход</title>
+    <title>FIBA Fantasy - Вход и Регистрация</title>
     <link rel="stylesheet" href="style.css">
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-	<script src="supabaseClient.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-	<script>
-	  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-	</script>
-
-    <script src="auth.js" defer></script>
 </head>
 <body class="auth-page">
 
     <header class="site-header">
-        <div class="logo-container">
-            <img src="logo-left.png" alt="Лого слева" class="logo">
+        <div class="logo-left">
+            <img src="logo-left.png" alt="Logo Left">
         </div>
-        <h1>Fantasy EuroBasket</h1>
-        <div class="logo-container">
-            <img src="logo-right.png" alt="Лого справа" class="logo">
+        <h1>FIBA Fantasy League</h1>
+        <div class="logo-right">
+            <img src="logo-right.png" alt="Logo Right">
         </div>
     </header>
 
     <main class="auth-container">
-        <section class="auth-forms">
-            <!-- Форма входа -->
-            <div class="auth-block">
-                <h2>Вход</h2>
-				<form id="login-form">
-					<input type="email" id="login-email" placeholder="Email" required>
-					<input type="password" id="login-password" placeholder="Пароль" required>
-					<button type="submit">Войти</button>
-				</form>
-            </div>
+        <section class="form-section">
+            <h2>Регистрация</h2>
+            <form id="register-form">
+                <input type="text" id="register-username" placeholder="Никнейм" required>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Пароль" required>
+                <button type="submit" class="btn-primary">Зарегистрироваться</button>
+            </form>
+        </section>
 
-            <!-- Форма регистрации -->
-            <div class="auth-block">
-                <h2>Регистрация</h2>
-				<form id="register-form">
-					<input type="text" id="register-username" placeholder="Никнейм" required>
-					<input type="email" id="register-email" placeholder="Email" required>
-					<input type="password" id="register-password" placeholder="Пароль" required>
-					<button type="submit">Регистрация</button>
-				</form>
-            </div>
+        <section class="form-section">
+            <h2>Вход</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <button type="submit" class="btn-secondary">Войти</button>
+            </form>
         </section>
     </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabaseClient.js"></script>
-<script src="auth.js"></script>
+
+    <footer>
+        <p>© 2025 FIBA Fantasy League</p>
+    </footer>
+
+    <!-- Подключение Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabaseClient.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>
