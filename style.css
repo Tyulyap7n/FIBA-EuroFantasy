@@ -271,7 +271,6 @@ button:hover {
 
 
 
-
 /* кнопка остаётся поверх полосы, но не будет заслонять текст
    т.к. JS выставит --btn-offset у панели (padding-top) */
 .par-btn {
@@ -510,8 +509,13 @@ button:hover {
 
 .add-btn.active{ background: var(--yellow); }
 
-/* pagination */
-.pagination{ display:flex; gap:10px; justify-content:center; align-items:center; margin-top:10px; }
+```pagination {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  align-items:center;
+  margin-top:10px;
+}
 .pg-btn{ background:#111; color:var(--white); border:1px solid #333; padding:6px 10px; border-radius:6px; cursor:pointer; }
 .role-selector-circle {
   position: relative;
@@ -558,25 +562,3 @@ button:hover {
 .role-selector.show{ pointer-events:auto; transform:scale(1); opacity:1; }
 .role-selector button{ width:90px; height:40px; border-radius:20px; border:none; background:var(--yellow); color:var(--black); font-weight:700; cursor:pointer; transform:rotate(-10deg); }
 
-/* roles slots */
-.roles-slots{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; justify-content:center; }
-.role-slot{ width:180px; background: rgba(255,255,255,0.03); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.06); text-align:center; }
-.slot-title{ font-weight:800; margin-bottom:10px; }
-.slot-body{ min-height:88px; display:flex; align-items:center; justify-content:center; gap:8px; flex-direction:column; }
-
-/* slot player mini-card */
-.slot-player{ display:flex; flex-direction:column; align-items:center; gap:6px; }
-.slot-player img{ width:56px; height:56px; border-radius:50%; border:2px solid var(--white); object-fit:cover; }
-.slot-role{ background:#111; padding:4px 8px; border-radius:6px; color:var(--yellow); font-weight:700; }
-.slot-price{ width:40px; height:40px; border-radius:50%; background:var(--orange); color:var(--black); display:flex; align-items:center; justify-content:center; font-weight:800; }
-
-/* pool (not used as separate list, roles are slots) */
-.player-pool{ display:none; }
-
-/* responsive */
-@media (max-width:900px){
-  .strip-wrapper, .panel{ width:92%; }
-  .roster-top{ flex-direction:column; }
-  .player-preview{ width:100%; }
-  .role-selector{ width:200px; height:200px; }
-}

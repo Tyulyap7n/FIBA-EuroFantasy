@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Fantasy EuroBasket — Dashboard</title>
   <link rel="stylesheet" href="style.css"/>
-  <!-- Подключаем Supabase SDK до всех скриптов -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Наш глобальный клиент Supabase -->
+  <!-- Supabase client -->
   <script src="supabaseClient.js"></script>
 
-  <!-- Скрипт авторизации (слушает изменения auth state) -->
-  <script src="auth.js"></script>
+  <!-- app + auth + UI logic -->
+  <script src="app.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="script.js" defer></script>
 
-  <!-- Основная логика dashboard (загрузка игроков и UI) -->
-  <script src="script.js"></script>
+  <!-- dashboard.js (no-op kept for compatibility) -->
+  <script src="dashboard.js" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -137,22 +141,31 @@
 
       <button id="save-roster" class="btn-yellow">Сохранить состав</button>
     </div>
-	  <script>
-    // Логаут по кнопке
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      if (!window.supabase) {
-        console.error('Supabase client не инициализирован для logout');
-        return;
-      }
-      try {
-        await supabase.auth.signOut();
-        window.location.href = 'index.html';
-      } catch (err) {
-        console.error('Ошибка выхода:', err);
-      }
-    });
-  </script>
   </section>
 </main>
+
+<!-- Небольшой скрипт для логаута (использует supabase, безопасно ждёт инициализацию) -->
+<script>
+(function waitAndBindLogout() {
+  let tries = 0;
+  const interval = setInterval(() => {
+    if (window.supabase) {
+      clearInterval(interval);
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        try {
+          await supabase.auth.signOut();
+          window.location.href = 'index.html';
+        } catch (e) {
+          console.error('Ошибка при logout:', e);
+        }
+      });
+    } else if (++tries > 50) {
+      clearInterval(interval);
+      console.warn('supabase не доступен для logout binding');
+    }
+  }, 100);
+})();
+</script>
+
 </body>
 </html>
