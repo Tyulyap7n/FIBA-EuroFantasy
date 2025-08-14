@@ -7,28 +7,29 @@
   <link rel="stylesheet" href="style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <!-- Supabase SDK -->
+  <!-- ВАЖНО: Supabase CDN → клиент, потом остальная логика -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Supabase client -->
   <script src="supabaseClient.js"></script>
 
-  <!-- app + auth + UI logic -->
+  <!-- guard + табы -->
   <script src="app.js" defer></script>
-  <script src="auth.js" defer></script>
+  <!-- логика UI/таблицы/ролей и сохранения в БД -->
   <script src="script.js" defer></script>
-
-  <!-- dashboard.js (no-op kept for compatibility) -->
+  <!-- no-op (оставлен) -->
   <script src="dashboard.js" defer></script>
 </head>
 <body>
 <header class="site-header">
-  <div class="logo-container"><img src="logo-left.png" alt="Лого" class="logo"></div>
+  <div class="logo-container">
+    <img src="logo-left.png" alt="Лого" class="logo" loading="lazy" decoding="async" onerror="this.remove()">
+  </div>
   <nav class="header-links">
     <a href="leaderboard.html" class="header-link">Турнирная таблица</a>
     <a href="top-players.html" class="header-link">Топ игроков</a>
   </nav>
-  <div class="logo-container"><img src="logo-right.png" alt="Лого" class="logo"></div>
+  <div class="logo-container">
+    <img src="logo-right.png" alt="Лого" class="logo" loading="lazy" decoding="async" onerror="this.remove()">
+  </div>
 </header>
 
 <main class="page">
@@ -143,29 +144,5 @@
     </div>
   </section>
 </main>
-
-<!-- Небольшой скрипт для логаута (использует supabase, безопасно ждёт инициализацию) -->
-<script>
-(function waitAndBindLogout() {
-  let tries = 0;
-  const interval = setInterval(() => {
-    if (window.supabase) {
-      clearInterval(interval);
-      document.getElementById('logout-btn')?.addEventListener('click', async () => {
-        try {
-          await supabase.auth.signOut();
-          window.location.href = 'index.html';
-        } catch (e) {
-          console.error('Ошибка при logout:', e);
-        }
-      });
-    } else if (++tries > 50) {
-      clearInterval(interval);
-      console.warn('supabase не доступен для logout binding');
-    }
-  }, 100);
-})();
-</script>
-
 </body>
 </html>

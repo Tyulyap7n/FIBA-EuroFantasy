@@ -1,55 +1,52 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIBA Fantasy - Вход и Регистрация</title>
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Supabase SDK (должен быть первым среди скриптов, использующих supabase) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Наш глобальный клиент Supabase -->
-    <script src="supabaseClient.js"></script>
-
-    <!-- Скрипт авторизации (подключаем после клиента; он безопасно ждёт инициализацию) -->
-    <script src="auth.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIBA Fantasy - Вход и Регистрация</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-page">
 
-    <header class="site-header">
-        <div class="logo-left">
-            <img src="logo-left.png" alt="Logo Left">
-        </div>
-        <h1>FIBA Fantasy League</h1>
-        <div class="logo-right">
-            <img src="logo-right.png" alt="Logo Right">
-        </div>
-    </header>
+  <header class="site-header">
+    <div class="logo-left">
+      <!-- Если картинки нет — тихо убираем тег, чтобы не было битого изображения -->
+      <img src="logo-left.png" alt="Logo Left" loading="lazy" decoding="async" onerror="this.remove()">
+    </div>
+    <h1>FIBA Fantasy League</h1>
+    <div class="logo-right">
+      <img src="logo-right.png" alt="Logo Right" loading="lazy" decoding="async" onerror="this.remove()">
+    </div>
+  </header>
 
-    <main class="auth-container">
-        <section class="form-section">
-            <h2>Регистрация</h2>
-            <form id="register-form">
-                <input type="text" id="register-username" placeholder="Никнейм" required>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Пароль" required>
-                <button type="submit" class="btn-primary">Зарегистрироваться</button>
-            </form>
-        </section>
+  <main class="auth-container">
+    <section class="form-section">
+      <h2>Регистрация</h2>
+      <form id="register-form">
+        <input type="text" id="register-username" placeholder="Никнейм" required>
+        <input type="email" id="register-email" placeholder="Email" required>
+        <input type="password" id="register-password" placeholder="Пароль" required>
+        <button type="submit" class="btn-primary">Зарегистрироваться</button>
+      </form>
+    </section>
 
-        <section class="form-section">
-            <h2>Вход</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Пароль" required>
-                <button type="submit" class="btn-secondary">Войти</button>
-            </form>
-        </section>
-    </main>
+    <section class="form-section">
+      <h2>Вход</h2>
+      <form id="login-form">
+        <input type="email" id="login-email" placeholder="Email" required>
+        <input type="password" id="login-password" placeholder="Пароль" required>
+        <button type="submit" class="btn-secondary">Войти</button>
+      </form>
+    </section>
+  </main>
 
-    <footer>
-        <p>© 2025 FIBA Fantasy League</p>
-    </footer>
+  <footer>
+    <p>© 2025 FIBA Fantasy League</p>
+  </footer>
+
+  <!-- ВАЖНО: сначала CDN, затем клиент, затем логика -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
