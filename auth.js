@@ -1,59 +1,89 @@
+// auth.js — регистрация и вход
 document.addEventListener("DOMContentLoaded", () => {
-    const registerForm = document.getElementById("register-form");
-    const loginForm = document.getElementById("login-form");
+  const registerForm = document.getElementById("register-form");
+  const loginForm = document.getElementById("login-form");
 
-    // Регистрация
-    registerForm?.addEventListener("submit", async (e) => {
-        e.preventDefault();
+  if (!window.supabase) {
+    console.error("supabase не инициализирован в auth.js");
+    return;
+  }
 
-        const username = document.getElementById("register-username").value;
-        const email = document.getElementById("register-email").value;
-        const password = document.getElementById("register-password").value;
+  // Регистрация
+  registerForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("register-username").value.trim();
+    const email = document.getElementById("register-email").value.trim();
+    const password = document.getElementById("register-password").value;
 
-        // 1. Создаём пользователя в auth.users
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password
-        });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username } } // v2: опции внутри объекта
+      });
 
-        if (signUpError) {
-            alert("Ошибка регистрации: " + signUpError.message);
-            return;
-        }
+      if (error) {
+        console.error("signUp error:", error);
+        alert("Ошибка регистрации: " + error.message);
+        return;
+      }
 
-        const userId = signUpData.user?.id;
+      // Если нужна подтверждение email — сообщаем пользователю
+      if (data?.user && !data?.session) {
+        alert("Регистрация успешна. На ваш почтовый ящик отправлено письмо подтверждения. После подтверждения войдите.");
+        return;
+      }
 
-        // 2. Записываем в таблицу users
-        if (userId) {
-            const { error: insertError } = await supabase
-                .from("users")
-                .insert([{ id: userId, username }]);
-            if (insertError) {
-                alert("Ошибка записи в users: " + insertError.message);
-                return;
-            }
-        }
-
-        alert("Регистрация успешна! Теперь войдите в систему.");
-    });
-
-    // Вход
-    loginForm?.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const email = document.getElementById("login-email").value;
-        const password = document.getElementById("login-password").value;
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        if (error) {
-            alert("Ошибка входа: " + error.message);
-            return;
-        }
-
+      // Если сессия сразу вернулась — редиректим
+      if (data?.session) {
         window.location.href = "dashboard.html";
-    });
+      } else {
+        alert("Регистрация завершена. Проверьте почту для подтверждения (если требуется).");
+      }
+    } catch (err) {
+      console.error("Ошибка при регистрации:", err);
+      alert("Ошибка регистрации (см. консоль).");
+    }
+  });
+
+  // Вход
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        console.error("Ошибка входа:", error);
+        alert("Ошибка входа: " + error.message);
+        return;
+      }
+
+      // Если сессия есть — сразу редиректим
+      if (data?.session) {
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      // Если сессии нет, но нет ошибки — сообщаем пользователю (например, требуется подтверждение)
+      console.warn("signInWithPassword returned no session:", data);
+      alert("Вход инициирован, но сессия не создана. Проверьте почту для подтверждения или попробуйте снова.");
+    } catch (err) {
+      console.error("Ошибка выполнения входа:", err);
+      alert("Ошибка входа (см. консоль).");
+    }
+  });
+
+  // Подписка на изменение статуса (на всякий случай — полезно при magic links и т.п.)
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.debug("Auth event:", event, session);
+    if (event === "SIGNED_IN" && session) {
+      // Если пользователь подписался, редиректим на dashboard
+      if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") {
+        window.location.href = "dashboard.html";
+      }
+    }
+  });
 });

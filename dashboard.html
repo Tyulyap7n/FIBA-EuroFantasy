@@ -5,14 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Fantasy EuroBasket — Dashboard</title>
   <link rel="stylesheet" href="style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- Supabase (глобально) -->
+  <!-- Подключаем Supabase SDK до всех скриптов -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Наш глобальный клиент Supabase -->
   <script src="supabaseClient.js"></script>
-  <!-- guard + табы -->
-  <script src="app.js" defer></script>
-  <!-- ВСЯ логика UI/таблицы/ролей и сохранения в БД -->
-  <script src="script.js" defer></script>
+
+  <!-- Скрипт авторизации (слушает изменения auth state) -->
+  <script src="auth.js"></script>
+
+  <!-- Основная логика dashboard (загрузка игроков и UI) -->
+  <script src="script.js"></script>
 </head>
 <body>
 <header class="site-header">
@@ -134,6 +137,21 @@
 
       <button id="save-roster" class="btn-yellow">Сохранить состав</button>
     </div>
+	  <script>
+    // Логаут по кнопке
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      if (!window.supabase) {
+        console.error('Supabase client не инициализирован для logout');
+        return;
+      }
+      try {
+        await supabase.auth.signOut();
+        window.location.href = 'index.html';
+      } catch (err) {
+        console.error('Ошибка выхода:', err);
+      }
+    });
+  </script>
   </section>
 </main>
 </body>

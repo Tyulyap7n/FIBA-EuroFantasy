@@ -1,51 +1,69 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIBA Fantasy - Вход и Регистрация</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy League — Вход</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- 1. Подключаем Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. Глобальный клиент Supabase -->
+  <script src="supabaseClient.js"></script>
+
+  <!-- 3. Скрипт авторизации -->
+  <script src="auth.js"></script>
 </head>
-<body class="auth-page">
+<body>
+  <main>
+    <section class="auth-section">
+      <h1>Fantasy League</h1>
 
-    <header class="site-header">
-        <div class="logo-left">
-            <img src="logo-left.png" alt="Logo Left">
-        </div>
-        <h1>FIBA Fantasy League</h1>
-        <div class="logo-right">
-            <img src="logo-right.png" alt="Logo Right">
-        </div>
-    </header>
+      <form id="login-form">
+        <h2>Вход</h2>
+        <input type="email" id="login-email" placeholder="Email" required />
+        <input type="password" id="login-password" placeholder="Пароль" required />
+        <button type="submit">Войти</button>
+      </form>
 
-    <main class="auth-container">
-        <section class="form-section">
-            <h2>Регистрация</h2>
-            <form id="register-form">
-                <input type="text" id="register-username" placeholder="Никнейм" required>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Пароль" required>
-                <button type="submit" class="btn-primary">Зарегистрироваться</button>
-            </form>
-        </section>
+      <form id="register-form">
+        <h2>Регистрация</h2>
+        <input type="email" id="register-email" placeholder="Email" required />
+        <input type="password" id="register-password" placeholder="Пароль" required />
+        <button type="submit">Зарегистрироваться</button>
+      </form>
+    </section>
+  </main>
 
-        <section class="form-section">
-            <h2>Вход</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Пароль" required>
-                <button type="submit" class="btn-secondary">Войти</button>
-            </form>
-        </section>
-    </main>
+  <script>
+    // Вход
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        console.error('Ошибка входа:', err.message);
+      }
+    });
 
-    <footer>
-        <p>© 2025 FIBA Fantasy League</p>
-    </footer>
-
-    <!-- Подключение Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabaseClient.js"></script>
-    <script src="auth.js"></script>
+    // Регистрация
+    document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      try {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert('Проверьте email для подтверждения регистрации');
+      } catch (err) {
+        console.error('Ошибка регистрации:', err.message);
+      }
+    });
+  </script>
 </body>
 </html>
