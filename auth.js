@@ -32,6 +32,16 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Ошибка при проверке/создании user_team:", err);
     }
   }
+let currentUserTeamId = null;
+
+async function fetchUserTeam(userId) {
+  const { data, error } = await supabase
+    .from('user_teams')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+  if (!error) currentUserTeamId = data.id;
+}
 
   // Регистрация
   registerForm?.addEventListener("submit", async (e) => {
@@ -94,6 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Не удалось войти. Попробуйте снова.");
     }
   });
+if (data?.user) {
+  await fetchUserTeam(data.user.id);
+  window.location.href = "dashboard.html";
+}
 
   // Подписка на изменения сессии
   try {
