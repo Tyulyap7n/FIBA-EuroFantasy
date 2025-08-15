@@ -4,55 +4,21 @@
 const BUDGET_CAP = 60;
 const DEFAULT_AVATAR = ""; // например "img/default.png"
 // В script.js
-document.addEventListener("DOMContentLoaded", async () => {
-  // Проверяем, что Supabase доступен
+document.addEventListener("DOMContentLoaded", () => {
+  // Проверяем наличие Supabase
   if (!window.supabase || !supabase.auth) {
     console.error("Supabase не найден. Проверь подключение supabaseClient.js");
     return;
   }
 
-  // Получаем текущего пользователя
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    console.error("Ошибка получения пользователя:", userError);
-    document.getElementById("header-username").textContent = "Гость";
-    return;
-  }
-
-  let username = user.user_metadata?.username || user.email.split("@")[0];
-
-  // Получаем команду пользователя
-  let teamName = "Без команды";
-  try {
-    const { data: userTeam, error: teamError } = await supabase
-      .from("user_teams")
-      .select("team_name")
-      .eq("user_id", user.id)
-      .single();
-
-    if (teamError) {
-      console.warn("Ошибка получения имени команды:", teamError);
-    } else if (userTeam?.team_name) {
-      teamName = userTeam.team_name;
-    }
-  } catch (err) {
-    console.warn("Ошибка запроса команды:", err);
-  }
-
-  // Вставляем имя пользователя в хедер
-  const headerUsername = document.getElementById("header-username");
-  if (headerUsername) {
-    headerUsername.textContent = username + (teamName ? ` (${teamName})` : "");
-  }
-
-  // Подключаем кнопку rules
+  // Кнопка Rules
   const rulesBtn = document.getElementById("rules-btn");
   if (rulesBtn) {
     rulesBtn.addEventListener("click", () => {
       const rulesImg = document.getElementById("rules-img");
       if (rulesImg) {
-        rulesImg.src = "./image/rules.jpg";  // путь к файлу
-        rulesImg.style.maxWidth = "70%";     // уменьшаем размеры
+        rulesImg.src = "./image/rules.jpg"; // путь к файлу
+        rulesImg.style.maxWidth = "70%";    // уменьшаем размеры
         rulesImg.style.height = "auto";
         rulesImg.style.display = "block";
       }
@@ -69,6 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   checkImage(".logo-left", "./image/default-left.png");
   checkImage(".logo-right", "./image/default-right.png");
 });
+
 
 
 const ROLE_OPTIONS = [
