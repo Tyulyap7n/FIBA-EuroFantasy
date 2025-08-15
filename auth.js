@@ -1,11 +1,13 @@
+// auth.js — регистрация и вход с реальной авторизацией в Supabase
 document.addEventListener("DOMContentLoaded", () => {
   const registerForm = document.getElementById("register-form");
   const loginForm = document.getElementById("login-form");
 
+  // Проверка наличия Supabase клиента
   const ensureClient = () => {
     if (!window.supabase || !window.supabase.auth) {
       console.error("[Auth] Supabase клиент недоступен.");
-      alert("Произошла ошибка инициализации.");
+      alert("Произошла ошибка инициализации. Обновите страницу.");
       return false;
     }
     return true;
@@ -14,19 +16,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Создание записи user_team после регистрации/входа
   async function ensureUserTeam(user) {
     if (!user?.id) return;
-    
-    // проверка существующей команды
-    const { data: existingTeam } = await supabase
-      .from('user_teams')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!existingTeam) {
-      // берём имя из user_metadata (username)
-      const username = user.user_metadata?.username || "Игрок";
 
-      await supabase.from('user_teams').insert([{ user_id: user.id, team_name: username }]);
+    try {
+      const { data: existingTeam } = await supabase
+        .from('user_teams')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!existingTeam) {
+        const username = user.user_metadata?.username || "Игрок";
+        await supabase.from('user_teams').insert([{ user_id: user.id, team_name: username }]);
+      }
+    } catch (err) {
+      console.error("Ошибка при проверке/создании user_team:", err);
     }
   }
 
@@ -71,30 +74,23 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-if (error) {
-  alert("Ошибка входа: " + error.message);
-  return;
-}
+      if (error) {
+        alert("Ошибка входа: " + error.message);
+        return;
+      }
 
-// в Supabase v2 объект пользователя
-const user = data?.user || data?.session?.user;
-if (!user) {
-  alert("Не удалось получить пользователя после входа.");
-  return;
-}
+      const user = data?.user || data?.session?.user;
+      if (!user) {
+        alert("Не удалось получить пользователя после входа.");
+        return;
+      }
 
-// создаём команду пользователя
-await ensureUserTeam(user);
+      await ensureUserTeam(user);
 
-// редирект на дашборд
-window.location.href = "dashboard.html";
-
-
-      if (data?.user) await ensureUserTeam(data.user);
-
+      // Редирект на дашборд
       window.location.href = "dashboard.html";
     } catch (err) {
-      console.error("Ошибка выполнения входа:", err);
+      console.error("Ошибка входа:", err);
       alert("Не удалось войти. Попробуйте снова.");
     }
   });
@@ -103,7 +99,6 @@ window.location.href = "dashboard.html";
   try {
     if (window.supabase?.auth?.onAuthStateChange) {
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.debug("[Auth] onAuthStateChange:", event);
         if (event === "SIGNED_IN" && session?.user) {
           await ensureUserTeam(session.user);
           if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/" || window.location.pathname === "") {
