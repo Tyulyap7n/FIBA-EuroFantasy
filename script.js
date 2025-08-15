@@ -3,6 +3,12 @@
 // ====== Константы ======
 const BUDGET_CAP = 60;
 const DEFAULT_AVATAR = ""; // например "img/default.png"
+// В script.js
+const userNameElem = document.getElementById("user-name");
+// допустим, currentUser = { name: "Дмитрий Тюляпин" }
+if (userNameElem && currentUser) {
+  userNameElem.textContent = currentUser.name;
+}
 
 const ROLE_OPTIONS = [
   { key: "Scorer",    label: "SCORER" },
@@ -36,7 +42,7 @@ async function loadPlayersFromSupabase() {
     // Получаем игроков
     const { data: playersData, error: playersError } = await supabase
       .from("players")
-      .select("id, first_name, last_name, position, country, country_flag_url, price, stats, photo_url");
+      .select("id, first_name, last_name, position, country, price, stats, photo_url");
 
     if (playersError) { console.error(playersError); return; }
 
@@ -59,10 +65,9 @@ async function loadPlayersFromSupabase() {
     players = playersData.map(p => {
       const statsList = statsByPlayer[p.id] || [];
       const count = statsList.length || 1;
-  const avgAvg = statsList.reduce((sum, s) => 
+	const avgAvg = statsList.reduce((sum, s) => 
     sum + (
       (s.points || 0)
-      + (s.threes || 0) * 3
       + (s.assists || 0) * 1.5
       + (s.rebounds || 0) * 1.3
       + (s.steals || 0) * 3
@@ -91,7 +96,6 @@ async function loadPlayersFromSupabase() {
         to: avgTurnover,
         country: p.country || "",
         pos: p.position || "",
-        flag: p.country_flag_url || "",
         photo: p.photo_url || ""
       };
     });
@@ -166,13 +170,23 @@ function getPlayerStatsAvg(playerId) {
 
   // делим на count
 }
+let currentPage = 1;
+const playersPerPage = 8;
 
 function renderPlayersTable() {
   const tbody = document.getElementById("players-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  getFilteredAndSortedPlayers().forEach(p => {
+  // получаем фильтрованных и отсортированных игроков
+  const filteredPlayers = getFilteredAndSortedPlayers();
+  
+  const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
+  const start = (currentPage - 1) * playersPerPage;
+  const end = start + playersPerPage;
+  const pagePlayers = filteredPlayers.slice(start, end);
+
+  pagePlayers.forEach(p => {
     const tr = document.createElement("tr");
     tr.dataset.playerId = p.id;
     tr.innerHTML = `
@@ -185,6 +199,7 @@ function renderPlayersTable() {
     tbody.appendChild(tr);
   });
 
+  // обработчики клика на строки
   tbody.querySelectorAll("tr").forEach(tr => {
     tr.addEventListener("click", e => {
       if (e.target.closest(".add-btn")) return;
@@ -193,35 +208,32 @@ function renderPlayersTable() {
       if (player) showPlayerPreview(player);
     });
   });
+
+  // обновляем инфо о странице
+  const pageInfo = document.getElementById("page-info");
+  if (pageInfo) pageInfo.textContent = `${currentPage} / ${totalPages}`;
+
+  // активируем/деактивируем кнопки
+  document.getElementById("prev-page").disabled = currentPage <= 1;
+  document.getElementById("next-page").disabled = currentPage >= totalPages;
 }
+// кнопки пагинации
+document.getElementById("prev-page").addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPlayersTable();
+  }
+});
+document.getElementById("next-page").addEventListener("click", () => {
+  const filteredPlayers = getFilteredAndSortedPlayers();
+  const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderPlayersTable();
+  }
+});
 
-// ====== Карточка игрока ======
-function showPlayerPreview(player) {
-  const preview = document.getElementById("player-preview");
-  if (!preview) return;
 
-  preview.classList.remove("hidden"); preview.classList.add("show"); preview.style.display = "";
-
-  document.getElementById("profile-name").textContent = player.name || "";
-  document.getElementById("profile-photo").src = player.photo || "";
-  document.getElementById("profile-country-pos").textContent = `${player.pos || ""} — ${player.country || ""}`;
-  document.getElementById("profile-price").textContent = player.price ?? "";
-  if (player.flag) document.getElementById("profile-flag").style.backgroundImage = `url(${player.flag})`;
-  else document.getElementById("profile-flag").style.backgroundImage = "";
-  document.getElementById("profile-avg").textContent = player.avg ?? 0;
-  document.getElementById("profile-total").textContent = player.pts ?? 0;
-  document.getElementById("profile-picked").textContent = player.pickPercent ?? "0%";
-}
-
-function hidePlayerPreview() {
-  const preview = document.getElementById("player-preview");
-  if (!preview) return;
-  preview.classList.remove("show");
-  preview.classList.add("hidden");
-  setTimeout(() => {
-    preview.style.display = "none";
-  }, 180); // соответствует анимации CSS
-}
 
 // ====== Фильтры ======
 function initTableFilters() {

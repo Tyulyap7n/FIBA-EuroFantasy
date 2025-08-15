@@ -23,14 +23,19 @@
   <div class="logo-container">
     <img src="logo-left.png" alt="Лого" class="logo" loading="lazy" decoding="async" onerror="this.remove()">
   </div>
+
   <nav class="header-links">
     <a href="leaderboard.html" class="header-link">Турнирная таблица</a>
     <a href="top-players.html" class="header-link">Топ игроков</a>
   </nav>
+
+  <div class="user-name" id="user-name"></div>
+
   <div class="logo-container">
     <img src="logo-right.png" alt="Лого" class="logo" loading="lazy" decoding="async" onerror="this.remove()">
   </div>
 </header>
+
 
 <main class="page">
   <!-- RULES -->
@@ -40,8 +45,7 @@
       <button class="par-btn" data-target="rules-panel"><span>rules</span></button>
     </div>
     <div id="rules-panel" class="panel">
-      <h2>Правила лиги</h2>
-      <p>Бюджет команды: 60 монет. Всего 6 игроков. Менять состав можно до старта матча. Результаты считаются по выбранным ролям игрока.</p>
+      <img src="/image/rules.jpg" alt="Rules">
     </div>
   </section>
 
@@ -73,22 +77,6 @@
 
     <div id="roster-panel" class="panel">
       <div class="roster-top">
-        <aside id="player-preview" class="player-preview hidden">
-		  <div class="profile-header" id="profile-name"></div>
-		  <div class="profile-circles">
-			<div class="price-circle" id="profile-price"></div>
-			<div class="flag-circle" id="profile-flag"></div>
-		  </div>
-		  <img id="profile-photo" class="profile-photo" src="" alt="Player Photo"/>
-		  <div class="profile-stats">
-			<div class="stat-block"><div class="stat-value" id="profile-avg">0</div><div class="stat-label">AVG</div></div>
-			<div class="stat-block"><div class="stat-value" id="profile-total">0</div><div class="stat-label">PTS</div></div>
-			<div class="stat-block"><div class="stat-value" id="profile-picked">0%</div><div class="stat-label">Picked</div></div>
-		  </div>
-		  <button onclick="hidePlayerPreview()" class="close-preview">✕</button>
-		</aside>
-
-
         <div class="table-wrap">
           <div class="table-controls">
             <div class="filter-row">
