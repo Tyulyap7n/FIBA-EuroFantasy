@@ -271,6 +271,12 @@ button, input, select, textarea {
 }
 .role-slot img { width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--white); }
 .role-slot .role-name { margin-top:8px; font-size:14px; letter-spacing:1px; }
+#rules-panel img {
+  max-width: 80%;  /* меньше по ширине */
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 /* Модальное окно Rules */
 .rules-modal {
   position: fixed;
