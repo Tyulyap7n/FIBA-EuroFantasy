@@ -74,21 +74,20 @@
     <div id="roster-panel" class="panel">
       <div class="roster-top">
         <aside id="player-preview" class="player-preview hidden">
-          <div class="profile-header">Профиль</div>
-          <div class="profile-circles">
-            <div class="price-circle" id="profile-price"></div>
-            <div class="flag-circle" id="profile-flag"></div>
-          </div>
-          <img id="profile-photo" class="profile-photo" src="" alt="">
-          <h3 id="profile-name"></h3>
-          <div id="profile-country-pos" class="muted"></div>
+		  <div class="profile-header" id="profile-name"></div>
+		  <div class="profile-circles">
+			<div class="price-circle" id="profile-price"></div>
+			<div class="flag-circle" id="profile-flag"></div>
+		  </div>
+		  <img id="profile-photo" class="profile-photo" src="" alt="Player Photo"/>
+		  <div class="profile-stats">
+			<div class="stat-block"><div class="stat-value" id="profile-avg">0</div><div class="stat-label">AVG</div></div>
+			<div class="stat-block"><div class="stat-value" id="profile-total">0</div><div class="stat-label">PTS</div></div>
+			<div class="stat-block"><div class="stat-value" id="profile-picked">0%</div><div class="stat-label">Picked</div></div>
+		  </div>
+		  <button onclick="hidePlayerPreview()" class="close-preview">✕</button>
+		</aside>
 
-          <div class="profile-stats">
-            <div class="stat-block"><div class="stat-label">Среднее</div><div class="stat-value" id="profile-avg">0</div></div>
-            <div class="stat-block"><div class="stat-label">Всего</div><div class="stat-value" id="profile-total">0</div></div>
-            <div class="stat-block"><div class="stat-label">% ВЛ</div><div class="stat-value" id="profile-picked">0%</div></div>
-          </div>
-        </aside>
 
         <div class="table-wrap">
           <div class="table-controls">
@@ -113,13 +112,24 @@
           </div>
 
           <table id="players-table">
-            <thead>
-              <tr>
-                <th>Add</th><th>Photo</th><th>Player</th><th>Price</th>
-                <th>AVG</th><th>PTS</th><th>3PTM</th><th>REB</th><th>STL</th><th>BLK</th><th>TO</th>
-              </tr>
-            </thead>
-            <tbody id="players-tbody"></tbody>
+			<thead>
+			  <tr>
+				<th>Add</th>
+				<th>Photo</th>
+				<th>Player</th>
+				<th>Price</th>
+				<th>AVG</th>
+				<th>PTS</th>
+				<th>3PTM</th>
+				<th>AST</th>        <!-- добавили ассисты -->
+				<th>REB</th>
+				<th>STL</th>
+				<th>BLK</th>
+				<th>TO</th>
+			  </tr>
+			</thead>
+			<tbody id="players-tbody"></tbody>
+
           </table>
 
           <div class="pagination">
