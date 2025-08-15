@@ -70,10 +70,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        alert("Ошибка входа: " + error.message);
-        return;
-      }
+
+if (error) {
+  alert("Ошибка входа: " + error.message);
+  return;
+}
+
+// в Supabase v2 объект пользователя
+const user = data?.user || data?.session?.user;
+if (!user) {
+  alert("Не удалось получить пользователя после входа.");
+  return;
+}
+
+// создаём команду пользователя
+await ensureUserTeam(user);
+
+// редирект на дашборд
+window.location.href = "dashboard.html";
+
 
       if (data?.user) await ensureUserTeam(data.user);
 
