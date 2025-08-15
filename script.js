@@ -4,6 +4,8 @@
 const BUDGET_CAP = 60;
 const DEFAULT_AVATAR = ""; // например "img/default.png"
 // В script.js
+const currentUser = { name: "Дмитрий Тюляпин" };
+document.getElementById("user-name").textContent = currentUser.name;
 const userNameElem = document.getElementById("user-name");
 // допустим, currentUser = { name: "Дмитрий Тюляпин" }
 if (userNameElem && currentUser) {
