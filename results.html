@@ -55,10 +55,9 @@
       }
 
       // Ждём появления window.supabase (polling). Возвращает client или null.
-      async function waitForSupabase(timeout = 5000, interval = 100) {
+      async function waitForSupabase(timeout = 10000, interval = 100) {
         const start = Date.now();
         while (Date.now() - start < timeout) {
-          // возможны варианты: window.supabase уже клиент или factory; supabaseClient.js заменяет window.supabase клиентом
           if (window.supabase && typeof window.supabase.auth !== 'undefined') {
             return window.supabase;
           }
