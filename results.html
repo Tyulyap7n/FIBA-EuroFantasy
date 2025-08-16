@@ -39,58 +39,53 @@
 
   <!-- Подключаем клиент -->
   <script type="module">
-    import { supabase } from "./supabaseClient.js";
+  import { supabase } from './supabaseClient.js';
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      const tourSelect = document.getElementById("tourSelect");
-      const resultsTableBody = document.querySelector("#resultsTable tbody");
+  document.addEventListener('DOMContentLoaded', async () => {
+    const tourSelect = document.getElementById('tourSelect');
+    const resultsTableBody = document.querySelector('#resultsTable tbody');
 
-		async function loadResults() {
-		  console.log("=== loadResults start ===");
-		  const selectedTour = tourSelect.value ? parseInt(tourSelect.value) : null;
-		  console.log("selectedTour:", selectedTour);
+    async function loadResults() {
+      const selectedTour = tourSelect.value ? parseInt(tourSelect.value) : null;
 
-		  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-		  console.log("sessionData:", sessionData, "sessionError:", sessionError);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        resultsTableBody.innerHTML = `<tr><td colspan="3">Пользователь не авторизован</td></tr>`;
+        return;
+      }
 
-		  if (sessionError || !sessionData.session) {
-			resultsTableBody.innerHTML = `<tr><td colspan="3">Пользователь не авторизован</td></tr>`;
-			return;
-		  }
+      const userId = sessionData.session.user.id;
 
-		  const userId = sessionData.session.user.id;
-		  console.log("userId:", userId);
+      const { data: results, error } = await supabase
+        .rpc('get_team_results', { p_user_id: userId, p_tour: selectedTour });
 
-		  const { data: results, error } = await supabase
-			.rpc("get_team_results", { p_user_id: userId, p_tour: selectedTour });
+      if (error) {
+        console.error(error);
+        resultsTableBody.innerHTML = `<tr><td colspan="3">Ошибка загрузки данных</td></tr>`;
+        return;
+      }
 
-		  console.log("results:", results, "error:", error);
+      resultsTableBody.innerHTML = '';
+      if (!results || results.length === 0) {
+        resultsTableBody.innerHTML = `<tr><td colspan="3">Нет данных</td></tr>`;
+        return;
+      }
 
-		  if (error) {
-			resultsTableBody.innerHTML = `<tr><td colspan="3">Ошибка загрузки данных</td></tr>`;
-			return;
-		  }
+      results.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.role_name}</td>
+          <td>${item.first_name} ${item.last_name}</td>
+          <td>${item.points}</td>
+        `;
+        resultsTableBody.appendChild(tr);
+      });
+    }
 
-		  resultsTableBody.innerHTML = "";
-		  if (!results || results.length === 0) {
-			resultsTableBody.innerHTML = `<tr><td colspan="3">Нет данных</td></tr>`;
-			return;
-		  }
+    tourSelect.addEventListener('change', loadResults);
+    loadResults();
+  });
+</script>
 
-		  results.forEach(item => {
-			const tr = document.createElement("tr");
-			tr.innerHTML = `
-			  <td>${item.role_name}</td>
-			  <td>${item.first_name} ${item.last_name}</td>
-			  <td>${item.points}</td>
-			`;
-			resultsTableBody.appendChild(tr);
-		  });
-		}
-
-      tourSelect.addEventListener("change", loadResults);
-      loadResults();
-    });
-  </script>
 </body>
 </html>
