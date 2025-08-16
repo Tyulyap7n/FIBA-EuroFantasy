@@ -1,96 +1,126 @@
 const SUPABASE_URL = 'https://xovxokupvsnnjtskdgvr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-document.addEventListener("DOMContentLoaded", async () => {
-  if (!window.supabase) return console.error("Supabase не найден");
+import { createClient } from '@supabase/supabase-js'
+let query = supabase
+  .from('team_players')
+  .select(`
+    role:roles(name),
+    player:players(first_name,last_name,stats)
+  `)
+  .eq('team_id', userTeamId);
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) {
-    alert("Не авторизован");
-    window.location.href = "index.html";
-    return;
-  }
+if (selectedTour) {
+  query = query.eq('player_stats.tour', selectedTour);
+}
 
-  const userId = session.user.id;
+let { data, error } = await query;
 
-  // Получаем команду пользователя
-  const { data: teamData, error: teamError } = await supabase
-    .from("user_teams")
-    .select("id, team_name")
-    .eq("user_id", userId)
-    .limit(1)
-    .single();
+// Подставь свои данные Supabase
+const supabase = createClient('https://xovxokupvsnnjtskdgvr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E')
 
-  if (teamError || !teamData) return console.error(teamError);
+const tourSelect = document.getElementById('tourSelect')
+const tbody = document.getElementById('resultsTable').querySelector('tbody')
+const teamId = 1 // сюда подставь ID команды пользователя (например из авторизации)
+// results.js
+// results.js
+document.addEventListener('DOMContentLoaded', async () => {
+  const tourSelect = document.getElementById('tourSelect');
+  const resultsTableBody = document.querySelector('#resultsTable tbody');
 
-  const teamId = teamData.id;
+  async function loadResults() {
+    const selectedTour = tourSelect.value ? parseInt(tourSelect.value) : null;
+    const user = supabase.auth.user(); // текущий пользователь
 
-  // Получаем все туры с результатами команды
-  const { data: tours, error: toursError } = await supabase
-    .from("scores")
-    .select("tour_id")
-    .eq("team_id", teamId)
-    .order("tour_id", { ascending:true });
+    const { data, error } = await supabase
+      .rpc('get_team_results', { p_user_id: user.id, p_tour: selectedTour });
 
-  if (toursError) return console.error(toursError);
-
-  const tourSelect = document.getElementById("tourSelect");
-  tours.forEach(tour => {
-    const option = document.createElement("option");
-    option.value = tour.tour_id;
-    option.textContent = `Тур ${tour.tour_id}`;
-    tourSelect.appendChild(option);
-  });
-
-  async function loadTourStats(tourId) {
-    const statsBody = document.getElementById("statsBody");
-    statsBody.innerHTML = "";
-
-    const { data: teamPlayers } = await supabase
-      .from("team_players")
-      .select("player_id, role_id, roles(name)")
-      .eq("team_id", teamId);
-
-    let totalPoints = 0;
-
-    for (let tp of teamPlayers) {
-      const { data: player } = await supabase
-        .from("players")
-        .select("first_name,last_name")
-        .eq("id", tp.player_id)
-        .single();
-
-      const { data: statsArr } = await supabase
-        .from("player_stats")
-        .select("*")
-        .eq("player_id", tp.player_id)
-        .eq("tour", tourId);
-
-      const stats = statsArr[0] || {};
-      totalPoints += stats.points || 0;
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${tp.roles?.name || '-'}</td>
-        <td>${player.first_name} ${player.last_name}</td>
-        <td>${stats.points || 0}</td>
-        <td>${stats.threes || 0}</td>
-        <td>${stats.assists || 0}</td>
-        <td>${stats.rebounds || 0}</td>
-        <td>${stats.blocks || 0}</td>
-        <td>${stats.steals || 0}</td>
-        <td>${stats.turnover || 0}</td>
-      `;
-      statsBody.appendChild(row);
+    if (error) {
+      console.error(error);
+      resultsTableBody.innerHTML = `<tr><td colspan="3">Ошибка загрузки данных</td></tr>`;
+      return;
     }
 
-    document.getElementById("totalPoints").textContent = totalPoints;
+    resultsTableBody.innerHTML = '';
+    if (!data || data.length === 0) {
+      resultsTableBody.innerHTML = `<tr><td colspan="3">Нет данных</td></tr>`;
+      return;
+    }
+
+    data.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.role_name}</td>
+        <td>${item.first_name} ${item.last_name}</td>
+        <td>${item.points}</td>
+      `;
+      resultsTableBody.appendChild(tr);
+    });
   }
 
-  // Первоначально загружаем первый тур
-  if (tourSelect.value) loadTourStats(tourSelect.value);
+  tourSelect.addEventListener('change', loadResults);
 
-  tourSelect.addEventListener("change", () => {
-    loadTourStats(tourSelect.value);
-  });
+  // Загрузка при старте
+  loadResults();
 });
+
+
+// Функция получения результатов
+async function getTeamResults(teamId, tour = null) {
+  let { data: teamPlayers, error } = await supabase
+    .from('team_players')
+    .select(`
+      role:roles(name),
+      player:players(first_name, last_name),
+      stats:player_stats(points, tour)
+    `)
+    .eq('team_id', teamId)
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  const resultsMap = {}
+
+  teamPlayers.forEach(tp => {
+    const playerName = `${tp.player.first_name} ${tp.player.last_name}`
+    const roleName = tp.role.name
+
+    // Фильтруем статистику по туру, если указан
+    const filteredStats = tour
+      ? tp.stats.filter(s => s.tour === tour)
+      : tp.stats
+
+    const totalPoints = filteredStats.reduce((sum, s) => sum + (s.points || 0), 0)
+
+    resultsMap[playerName] = {
+      role: roleName,
+      points: totalPoints
+    }
+  })
+
+  return Object.entries(resultsMap).map(([playerName, { role, points }]) => ({
+    playerName,
+    role,
+    points
+  })).sort((a, b) => b.points - a.points)
+}
+
+// Функция рендера таблицы
+async function renderResults() {
+  const tour = tourSelect.value ? parseInt(tourSelect.value) : null
+  const results = await getTeamResults(teamId, tour)
+
+  tbody.innerHTML = ''
+  results.forEach(r => {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `<td>${r.role}</td><td>${r.playerName}</td><td>${r.points}</td>`
+    tbody.appendChild(tr)
+  })
+}
+
+// Событие изменения тура
+tourSelect.addEventListener('change', renderResults)
+
+// Начальная загрузка
+renderResults()

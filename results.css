@@ -1,29 +1,111 @@
-:root {
+:root{
   --purple: #633EDC;
   --orange: #FE641C;
   --yellow: #FDE600;
   --black: #1c1c1c;
   --white: #ffffff;
   --muted: #bfbfbf;
+  --panel-max-height: 1600px;
 }
 
+@font-face {
+  font-family: 'Petrov Sans';
+  src: url('/fonts/PetrovSans-Trial-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* === BASE / RESET === */
 * { box-sizing: border-box; }
-html, body { margin:0; padding:0; height:100%; background: var(--black); color: var(--white); font-family: 'Petrov Sans', Inter, system-ui, sans-serif; font-size: 20px; }
-h1,h2,h3,h4,h5,h6 { margin:0; }
-img { max-width: 100%; display: block; }
+html, body { height: 100%; }
+body{
+  margin: 0;
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Petrov Sans', Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-.main-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:var(--purple); }
-.main-header h1 { font-size:1.6rem; color:var(--white); }
-.logo img { width:50px; height:50px; object-fit:contain; }
+/* Контейнер страницы */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
 
-.container { max-width:1000px; margin:20px auto; padding:0 10px; }
-.tour-selector { margin-bottom:20px; }
-.select { padding:5px 10px; font-size:1rem; }
+/* Заголовок */
+h1 {
+  font-size: 2rem;
+  color: var(--purple);
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-.team-stats { margin-bottom:20px; }
-.stats-table { width:100%; border-collapse:collapse; }
-.stats-table th, .stats-table td { padding:8px 10px; border:1px solid var(--muted); text-align:center; }
-.stats-table th { background: var(--purple); color: var(--white); }
-.stats-table td { background: rgba(255,255,255,0.05); }
+/* Селектор тура */
+label {
+  font-size: 1rem;
+  margin-right: 10px;
+  color: var(--white);
+}
 
-.total-points h2 { color: var(--yellow); margin-top:10px; }
+select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--muted);
+  background: var(--black);
+  color: var(--white);
+  cursor: pointer;
+}
+
+/* Таблица результатов */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+th {
+  background: var(--purple);
+  color: var(--white);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+tr:nth-child(even) {
+  background: #222;
+}
+
+tr:hover {
+  background: var(--purple);
+  color: var(--white);
+  transition: 0.3s;
+}
+
+td {
+  border-bottom: 1px solid #333;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 15px;
+  }
+
+  table {
+    font-size: 16px;
+  }
+}
