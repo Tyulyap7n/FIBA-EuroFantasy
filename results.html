@@ -38,82 +38,66 @@
     </table>
   </div>
 
-  <!-- Модуль: динамически импортируем supabaseClient.js и работаем с ним -->
-  <script type="module">
-    (async () => {
+  <!-- CDN Supabase (если ты используешь CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.35.0/dist/supabase.min.js"></script>
+
+  <!-- Твой файл, который создаёт window.supabase (как выслал) -->
+  <script src="./supabaseClient.js"></script>
+
+  <!-- Логика: используем глобальный window.supabase -->
+  <script>
+    (function () {
       const resultsTableBody = document.querySelector('#resultsTable tbody');
       const tourSelect = document.getElementById('tourSelect');
 
-      // helper: write status to table body
       function setStatus(text) {
         resultsTableBody.innerHTML = `<tr><td colspan="3">${text}</td></tr>`;
       }
 
-      // Попробуем динамически импортировать модуль
-      let supabase = null;
-      try {
-        const mod = await import('./supabaseClient.js');
-        console.log('supabaseClient module exports:', Object.keys(mod));
-
-        // Возможные варианты экспорта: named export "supabase", default export, или export createClient (редко)
-        if (mod.supabase) {
-          supabase = mod.supabase;
-          console.log('Using named export mod.supabase');
-        } else if (mod.default) {
-          supabase = mod.default;
-          console.log('Using default export (mod.default)');
-        } else if (mod.createClient && typeof mod.createClient === 'function') {
-          // Если модуль экспортирует фабрику — попробуем вызвать (требует, чтобы модуль также экспортировал URL/KEY)
-          // но без URL/KEY не сможем. Выведем сообщение.
-          console.warn('Module exports createClient but no supabase instance. Please export supabase or default.');
-        } else {
-          console.warn('No supabase export found in supabaseClient.js');
+      // Ждём появления window.supabase (polling). Возвращает client или null.
+      async function waitForSupabase(timeout = 5000, interval = 100) {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          // возможны варианты: window.supabase уже клиент или factory; supabaseClient.js заменяет window.supabase клиентом
+          if (window.supabase && typeof window.supabase.auth !== 'undefined') {
+            return window.supabase;
+          }
+          await new Promise(r => setTimeout(r, interval));
         }
-      } catch (err) {
-        console.error('Ошибка импорта ./supabaseClient.js:', err);
-        setStatus('Ошибка подключения клиента (см. консоль).');
-        return;
+        return null;
       }
 
-      if (!supabase) {
-        setStatus('Клиент Supabase не найден в модуле. Проверь supabaseClient.js (экспорт supabase).');
-        return;
-      }
-
-      // Небольшая проверка API клиента — уверимся, что есть .auth и .rpc
-      if (typeof supabase.auth === 'undefined' || typeof supabase.rpc !== 'function') {
-        console.error('Импортированный объект не похож на Supabase client:', supabase);
-        setStatus('Импорт не является клиентом Supabase. Проверьте export в supabaseClient.js');
-        return;
-      }
-
-      // Функция загрузки результатов (robust)
       async function loadResults() {
         setStatus('Загрузка...');
-
         const selectedTour = tourSelect.value ? parseInt(tourSelect.value, 10) : null;
-        console.log('loadResults: selectedTour =', selectedTour);
+        console.log('[results] selectedTour =', selectedTour);
+
+        const supabaseClient = await waitForSupabase();
+        if (!supabaseClient) {
+          console.error('[results] Supabase client не инициализирован (window.supabase отсутствует)');
+          setStatus('Ошибка инициализации Supabase. Убедитесь, что supabaseClient.js подключён и CDN загружен.');
+          return;
+        }
+        console.log('[results] Supabase client готов');
 
         // Получаем сессию
         let sessionResp;
         try {
-          sessionResp = await supabase.auth.getSession();
+          sessionResp = await supabaseClient.auth.getSession();
         } catch (e) {
-          console.error('Ошибка при supabase.auth.getSession():', e);
+          console.error('[results] Ошибка при getSession():', e);
           setStatus('Ошибка получения сессии (см. консоль).');
           return;
         }
+        console.log('[results] sessionResp =', sessionResp);
 
-        console.log('sessionResp:', sessionResp);
         const sessionData = sessionResp?.data ?? null;
         const sessionError = sessionResp?.error ?? null;
-
         if (sessionError) {
-          console.error('sessionError:', sessionError);
+          console.error('[results] sessionError =', sessionError);
           setStatus('Ошибка сессии (см. консоль).');
           return;
         }
-
         if (!sessionData || !sessionData.session) {
           setStatus('Пользователь не авторизован');
           return;
@@ -121,28 +105,27 @@
 
         const userId = sessionData.session.user?.id;
         if (!userId) {
-          console.error('Нет user.id в session:', sessionData);
+          console.error('[results] Нет user.id в сессии', sessionData);
           setStatus('Невозможно определить пользователя.');
           return;
         }
-        console.log('userId:', userId);
+        console.log('[results] userId =', userId);
 
-        // Вызываем RPC (get_team_results)
+        // Вызов RPC
         let rpcResp;
         try {
-          rpcResp = await supabase.rpc('get_team_results', { p_user_id: userId, p_tour: selectedTour });
+          rpcResp = await supabaseClient.rpc('get_team_results', { p_user_id: userId, p_tour: selectedTour });
         } catch (e) {
-          console.error('Ошибка вызова RPC:', e);
+          console.error('[results] Ошибка вызова RPC:', e);
           setStatus('Ошибка вызова RPC (см. консоль).');
           return;
         }
+        console.log('[results] rpcResp =', rpcResp);
 
-        console.log('rpcResp:', rpcResp);
         const results = rpcResp?.data ?? null;
         const rpcError = rpcResp?.error ?? null;
-
         if (rpcError) {
-          console.error('RPC error:', rpcError);
+          console.error('[results] rpcError =', rpcError);
           setStatus('Ошибка получения данных (см. консоль).');
           return;
         }
@@ -152,30 +135,43 @@
           return;
         }
 
-        // Успех — отрисуем таблицу
+        // Рендерим таблицу
         resultsTableBody.innerHTML = '';
         results.forEach(item => {
           const tr = document.createElement('tr');
-          // Защитим значения на случай null/undefined
           const role = item.role_name ?? '';
           const fname = item.first_name ?? '';
           const lname = item.last_name ?? '';
           const points = (item.points === null || item.points === undefined) ? 0 : item.points;
 
           tr.innerHTML = `
-            <td>${role}</td>
-            <td>${fname} ${lname}</td>
-            <td>${points}</td>
+            <td>${escapeHtml(role)}</td>
+            <td>${escapeHtml(fname)} ${escapeHtml(lname)}</td>
+            <td>${escapeHtml(String(points))}</td>
           `;
           resultsTableBody.appendChild(tr);
         });
-      } // end loadResults
+      }
+
+      // Простая защита от XSS — экранирует текст
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
 
       // Привязки
       tourSelect.addEventListener('change', loadResults);
 
-      // Первичная загрузка
-      await loadResults();
+      // Первичная загрузка (после DOMContentLoaded)
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadResults);
+      } else {
+        loadResults();
+      }
     })();
   </script>
 </body>
