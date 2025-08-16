@@ -6,7 +6,44 @@
   // Увеличиваем таймаут ожидания
   const WAIT_TIMEOUT = 10000; // 10 секунд
   const POLL_INTERVAL = 50; // 50 мс
-  
+    const supabasePromise = new Promise(async (resolve, reject) => {
+    try {
+      const wait = await waitForFactory();
+      if (!wait) {
+        console.error('[Supabase] CDN фабрика createClient не обнаружена в window (timeout). Проверь подключение CDN и порядок скриптов.');
+        reject(new Error('Supabase factory not found.'));
+        return;
+      }
+
+      if (wait.alreadyClient) {
+        console.debug('[Supabase] window.supabase уже является клиентом — ничего не делаем.');
+        resolve(window.supabase);
+        return;
+      }
+
+      const { factoryOwner, factory } = wait;
+      let client;
+      try {
+        client = factory(SUPABASE_URL, SUPABASE_ANON_KEY);
+      } catch (e) {
+        console.error('[Supabase] Ошибка при вызове createClient():', e);
+        reject(e);
+        return;
+      }
+
+      window.supabase = client;
+      console.debug('[Supabase] Клиент создан через', factoryOwner, client);
+      window.__supabaseClientInitialized = true;
+      resolve(client);
+    } catch (err) {
+      console.error('[Supabase] Неожиданная ошибка инициализации:', err);
+      reject(err);
+    }
+  });
+
+  // Экспортируем промис для использования в других скриптах
+  window.supabaseClientReady = supabasePromise;
+})();
   function findFactory() {
     // Возвращает { owner: 'supabase'|'Supabase', fn: createClient } или null
     try {

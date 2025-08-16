@@ -46,13 +46,29 @@
 
   <!-- Логика: используем глобальный window.supabase -->
   <script>
-    (function () {
+	(function () {
       const resultsTableBody = document.querySelector('#resultsTable tbody');
       const tourSelect = document.getElementById('tourSelect');
 
       function setStatus(text) {
         resultsTableBody.innerHTML = `<tr><td colspan="3">${text}</td></tr>`;
       }
+
+      async function loadResults() {
+        setStatus('Загрузка...');
+        const selectedTour = tourSelect.value ? parseInt(tourSelect.value, 10) : null;
+        console.log('[results] selectedTour =', selectedTour);
+
+        let supabaseClient;
+        try {
+          // Ждём, пока промис в supabaseClient.js не завершится
+          supabaseClient = await window.supabaseClientReady;
+          console.log('[results] Supabase client готов');
+        } catch (e) {
+          console.error('[results] Supabase client не инициализирован:', e);
+          setStatus('Ошибка инициализации Supabase. Проверьте подключение CDN.');
+          return;
+        }
 
       // Ждём появления window.supabase (polling). Возвращает client или null.
       async function waitForSupabase(timeout = 10000, interval = 100) {
