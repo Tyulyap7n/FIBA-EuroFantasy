@@ -1,193 +1,55 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <title>Результаты команды</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="stylesheet" href="results.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты команды</title>
+    <link rel="stylesheet" href="results.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Результаты команды</h1>
+    <header class="main-header">
+        <div class="logo">
+            <img src="logo-left.png" alt="Логотип" onerror="this.remove()">
+        </div>
+        <h1>Мои результаты</h1>
+        <div class="logo">
+            <img src="logo-right.png" alt="Логотип" onerror="this.remove()">
+        </div>
+    </header>
 
-    <label for="tourSelect">Выберите тур:</label>
-    <select id="tourSelect">
-      <option value="">Все туры</option>
-      <option value="1">Тур 1</option>
-      <option value="2">Тур 2</option>
-      <option value="3">Тур 3</option>
-      <option value="4">Тур 4</option>
-      <option value="5">Тур 5</option>
-      <option value="6">Тур 6</option>
-      <option value="7">Тур 7</option>
-      <option value="8">Тур 8</option>
-      <option value="9">Тур 9</option>
-    </select>
+    <main class="container">
+        <div class="tour-selector">
+            <label for="tourSelect">Выберите тур:</label>
+            <select id="tourSelect" class="select"></select>
+        </div>
 
-    <table id="resultsTable" aria-live="polite">
-      <thead>
-        <tr>
-          <th>Роль</th>
-          <th>Игрок</th>
-          <th>Очки</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="3">Загрузка...</td></tr>
-      </tbody>
-    </table>
-  </div>
+        <div class="team-stats">
+            <h2>Статистика игроков</h2>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Роль</th>
+                        <th>Игрок</th>
+                        <th>Очки</th>
+                        <th>Трёхочковые</th>
+                        <th>Передачи</th>
+                        <th>Подборы</th>
+                        <th>Блоки</th>
+                        <th>Перехваты</th>
+                        <th>Потери</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+        </div>
 
-  <!-- CDN Supabase (если ты используешь CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.35.0/dist/supabase.min.js"></script>
+        <div class="total-points">
+            <h2>Общее количество очков: <span id="totalPoints">0</span></h2>
+        </div>
+    </main>
 
-  <!-- Твой файл, который создаёт window.supabase (как выслал) -->
-  <script src="./supabaseClient.js"></script>
-
-  <!-- Логика: используем глобальный window.supabase -->
-  <script>
-	(function () {
-      const resultsTableBody = document.querySelector('#resultsTable tbody');
-      const tourSelect = document.getElementById('tourSelect');
-
-      function setStatus(text) {
-        resultsTableBody.innerHTML = `<tr><td colspan="3">${text}</td></tr>`;
-      }
-
-      async function loadResults() {
-        setStatus('Загрузка...');
-        const selectedTour = tourSelect.value ? parseInt(tourSelect.value, 10) : null;
-        console.log('[results] selectedTour =', selectedTour);
-
-        let supabaseClient;
-        try {
-          // Ждём, пока промис в supabaseClient.js не завершится
-          supabaseClient = await window.supabaseClientReady;
-          console.log('[results] Supabase client готов');
-        } catch (e) {
-          console.error('[results] Supabase client не инициализирован:', e);
-          setStatus('Ошибка инициализации Supabase. Проверьте подключение CDN.');
-          return;
-        }
-
-      // Ждём появления window.supabase (polling). Возвращает client или null.
-      async function waitForSupabase(timeout = 10000, interval = 100) {
-        const start = Date.now();
-        while (Date.now() - start < timeout) {
-          if (window.supabase && typeof window.supabase.auth !== 'undefined') {
-            return window.supabase;
-          }
-          await new Promise(r => setTimeout(r, interval));
-        }
-        return null;
-      }
-
-      async function loadResults() {
-        setStatus('Загрузка...');
-        const selectedTour = tourSelect.value ? parseInt(tourSelect.value, 10) : null;
-        console.log('[results] selectedTour =', selectedTour);
-
-        const supabaseClient = await waitForSupabase();
-        if (!supabaseClient) {
-          console.error('[results] Supabase client не инициализирован (window.supabase отсутствует)');
-          setStatus('Ошибка инициализации Supabase. Убедитесь, что supabaseClient.js подключён и CDN загружен.');
-          return;
-        }
-        console.log('[results] Supabase client готов');
-
-        // Получаем сессию
-        let sessionResp;
-        try {
-          sessionResp = await supabaseClient.auth.getSession();
-        } catch (e) {
-          console.error('[results] Ошибка при getSession():', e);
-          setStatus('Ошибка получения сессии (см. консоль).');
-          return;
-        }
-        console.log('[results] sessionResp =', sessionResp);
-
-        const sessionData = sessionResp?.data ?? null;
-        const sessionError = sessionResp?.error ?? null;
-        if (sessionError) {
-          console.error('[results] sessionError =', sessionError);
-          setStatus('Ошибка сессии (см. консоль).');
-          return;
-        }
-        if (!sessionData || !sessionData.session) {
-          setStatus('Пользователь не авторизован');
-          return;
-        }
-
-        const userId = sessionData.session.user?.id;
-        if (!userId) {
-          console.error('[results] Нет user.id в сессии', sessionData);
-          setStatus('Невозможно определить пользователя.');
-          return;
-        }
-        console.log('[results] userId =', userId);
-
-        // Вызов RPC
-        let rpcResp;
-        try {
-          rpcResp = await supabaseClient.rpc('get_team_results', { p_user_id: userId, p_tour: selectedTour });
-        } catch (e) {
-          console.error('[results] Ошибка вызова RPC:', e);
-          setStatus('Ошибка вызова RPC (см. консоль).');
-          return;
-        }
-        console.log('[results] rpcResp =', rpcResp);
-
-        const results = rpcResp?.data ?? null;
-        const rpcError = rpcResp?.error ?? null;
-        if (rpcError) {
-          console.error('[results] rpcError =', rpcError);
-          setStatus('Ошибка получения данных (см. консоль).');
-          return;
-        }
-
-        if (!results || results.length === 0) {
-          setStatus('Нет данных');
-          return;
-        }
-
-        // Рендерим таблицу
-        resultsTableBody.innerHTML = '';
-        results.forEach(item => {
-          const tr = document.createElement('tr');
-          const role = item.role_name ?? '';
-          const fname = item.first_name ?? '';
-          const lname = item.last_name ?? '';
-          const points = (item.points === null || item.points === undefined) ? 0 : item.points;
-
-          tr.innerHTML = `
-            <td>${escapeHtml(role)}</td>
-            <td>${escapeHtml(fname)} ${escapeHtml(lname)}</td>
-            <td>${escapeHtml(String(points))}</td>
-          `;
-          resultsTableBody.appendChild(tr);
-        });
-      }
-
-      // Простая защита от XSS — экранирует текст
-      function escapeHtml(str) {
-        return String(str)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      // Привязки
-      tourSelect.addEventListener('change', loadResults);
-
-      // Первичная загрузка (после DOMContentLoaded)
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadResults);
-      } else {
-        loadResults();
-      }
-    })();
-  </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="supabaseClient.js"></script>
+    <script src="results.js"></script>
 </body>
 </html>
