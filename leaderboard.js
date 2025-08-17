@@ -1,5 +1,9 @@
 // leaderboard.js
-import { supabase } from './supabaseClient.js';
+// ❌ не нужно:
+// import { supabase } from './supabaseClient.js'
+
+// ✅ правильно:
+const { data: { user }, error } = await supabase.auth.getUser();
 
 const leaderboardBody = document.getElementById('leaderboard-body');
 const rosterPanel = document.getElementById('roster-panel');
