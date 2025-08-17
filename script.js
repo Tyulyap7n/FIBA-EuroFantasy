@@ -627,12 +627,12 @@ async function saveRosterToDb() {
 /* ========== Инициализация страницы ========== */
 document.addEventListener("DOMContentLoaded", async () => {
 	// Проверка авторизации
-const user = supabase.auth.user();
-if (!user) {
-  // если пользователь не авторизован — редирект на страницу входа
+const { data: { user }, error } = await supabase.auth.getUser();
+if (error || !user) {
   window.location.href = "index.html";
   return;
 }
+
 
 try {
   // Получаем ник пользователя из таблицы profiles
