@@ -1,315 +1,209 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EuroFantasy — Лидерборд</title>
-
-  <!-- Fonts & Base Styles already used in the repo -->
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Leaderboard — EuroFantasy</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-  :root{
-  --purple: #633EDC;
-  --orange: #FE641C;
-  --yellow: #FDE600;
-  --black: #1c1c1c;
-  --white: #ffffff;
-  --muted: #bfbfbf;
-  --panel-max-height: 1600px;
-}
-
-@font-face {
-  font-family: 'Petrov Sans';
-  src: url('/fonts/PetrovSans-Trial-Bold.otf') format('opentype');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* === BASE / RESET === */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body{
-  margin: 0;
-  background: var(--black);
-  color: var(--white);
-  font-family: 'Petrov Sans', Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 20px;
-  line-height: 1.2;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-    header {
-      display:flex; align-items:center; justify-content:space-between;
-      gap: 12px; padding: 16px 20px; backdrop-filter: blur(8px);
-      position: sticky; top: 0; z-index: 20;
-      background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0));
+    /* === LEADERBOARD PAGE === */
+    .leaderboard-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
     }
-    .brand { display:flex; align-items:center; gap:12px; color:#fff; }
-    .brand img { width:32px; height:32px; }
-    .brand h1 { font-size: 18px; margin:0; font-weight:600; letter-spacing:.3px; }
 
-    .wrap { display:grid; grid-template-columns: 1.2fr .8fr; gap: 16px; padding: 16px; }
-    @media (max-width: 1100px){ .wrap { grid-template-columns: 1fr; } }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: var(--card-br);
-      box-shadow: 0 6px 30px rgba(0, 0, 0, .25) inset, 0 4px 16px rgba(0,0,0,.25);
-      border: 1px solid rgba(255,255,255,.08);
+    .leaderboard-page h1 {
+      font-family: 'Petrov Sans', sans-serif;
+      font-size: 2.2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: var(--yellow);
+      letter-spacing: 1px;
     }
-    .card h2 { padding: 14px 16px; margin:0; border-bottom:1px solid rgba(255,255,255,.06); font-size:16px; font-weight:600; }
 
-    .controls { display:flex; gap: 8px; align-items:center; padding: 10px 12px; }
-    .controls .search { flex:1; }
-    input, select, button {
-      background: rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.12);
-      border-radius: 12px; padding: 10px 12px; outline: none;
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #2a2a2a;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
     }
-    button.primary { background: #3a7afe; border-color: transparent; }
-
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06); text-align:left; }
-    .table th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity:.9; }
-    .table tr:hover { background: rgba(255,255,255,.04); cursor: pointer; }
-    .you { outline: 2px solid #3a7afe; outline-offset: -2px; }
-    .rank { width: 56px; text-align: right; opacity:.85; }
-    .points { text-align: right; font-variant-numeric: tabular-nums; }
-    .manager { opacity: .9; }
-    .team { font-weight: 600; }
-
-    .sticky-tools { display:flex; gap:8px; padding: 10px 12px; position: sticky; top: 58px; backdrop-filter: blur(8px); background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0)); z-index: 10; border-bottom: 1px solid rgba(255,255,255,.06) }
-
-    .roster {
-      padding: 10px 12px;
-      display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px;
+    .leaderboard-table thead {
+      background: var(--purple);
     }
-    @media (max-width: 520px){ .roster { grid-template-columns: 1fr; } }
-    .player { display:flex; gap:10px; align-items:center; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 8px; }
-    .player img { width:38px; height:38px; border-radius: 50%; object-fit: cover; border:1px solid rgba(255,255,255,.2); }
-    .player .meta { font-size: 12px; opacity: .85; }
-    .empty { padding: 14px; opacity: .75; }
+    .leaderboard-table th {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      font-weight: bold;
+      font-size: 1rem;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+    .leaderboard-table td {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid #444;
+      font-size: 0.95rem;
+    }
+    .leaderboard-table tr:nth-child(even) {
+      background: #222;
+    }
+    .leaderboard-table tr:hover {
+      background: rgba(254,100,28,0.15);
+      transition: background 0.2s ease-in-out;
+    }
+    .leaderboard-table tr.me {
+      background: rgba(253,230,0,0.25);
+      font-weight: bold;
+    }
 
-    .muted { opacity:.7; }
-    .hidden { display:none; }
+    .roster-panel {
+      margin-top: 2rem;
+      background: #2a2a2a;
+      border-radius: 16px;
+      padding: 1.5rem;
+      max-height: var(--panel-max-height);
+      overflow-y: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    .roster-panel h2 {
+      color: var(--orange);
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .roster-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+    .roster-card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 0.8rem;
+      text-align: center;
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+    .roster-card img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 0.5rem;
+    }
+    .roster-card .name {
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+    }
+    .roster-card .club {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <img src="/image/ball.svg" alt=""/>
-      <h1>EuroFantasy — Турнирная таблица</h1>
+  <div class="leaderboard-page">
+    <h1>Турнирная таблица</h1>
+
+    <!-- Таблица лидерборда -->
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Команда</th>
+          <th>Очки</th>
+          <th>Состав</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <!-- Заполняется JS -->
+      </tbody>
+    </table>
+
+    <!-- Панель состава -->
+    <div class="roster-panel hidden" id="roster-panel">
+      <h2>Состав команды</h2>
+      <div class="roster-list" id="roster-list">
+        <!-- Игроки выводятся динамически -->
+      </div>
     </div>
-    <div id="userBox" class="muted">—</div>
-  </header>
+  </div>
 
-  <main class="wrap">
-    <section class="card">
-      <h2>Лидерборд</h2>
-      <div class="sticky-tools">
-        <input id="search" class="search" type="search" placeholder="Поиск по команде или нику…" />
-        <button id="btnMe" class="primary" title="Найти мою команду">Найти меня</button>
-        <select id="tourFilter" title="Фильтр тура">
-          <option value="all" selected>Итог (все туры)</option>
-          <option value="last">Последний тур</option>
-        </select>
-      </div>
-      <div style="overflow:auto">
-        <table class="table" id="leaderTable" aria-label="Лидерборд">
-          <thead>
-            <tr>
-              <th class="rank">#</th>
-              <th>Команда</th>
-              <th>Менеджер</th>
-              <th class="points">Очки</th>
-            </tr>
-          </thead>
-          <tbody id="leaderBody"><tr><td colspan="4" class="empty">Загрузка…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <aside class="card">
-      <h2 id="sideTitle">Состав команды</h2>
-      <div class="controls">
-        <div id="sideInfo" class="muted">Выберите команду, чтобы увидеть состав</div>
-      </div>
-      <div id="roster" class="roster"></div>
-    </aside>
-  </main>
+  <!-- Модули -->
+  <script type="module">
+    import { supabase } from './supabaseClient.js';
 
-  <!-- Supabase + Auth from your repo -->
-  <script src="/supabaseClient.js"></script>
-  <script src="/auth.js"></script>
-  <script>
-    // =====================
-    // CONFIG — адаптируйте под вашу схему БД, если нужно
-    // =====================
-    const CFG = {
-      // Таблица / вьюха с агрегированными очками на команду
-      // Ожидаемые поля: team_id, team_name, total_points, last_tour_points, manager_username, manager_id
-      leaderboardView: 'leaderboard_view',
-
-      // Таблица с ростером: одна строка на игрока
-      // Ожидаемые поля: team_id, player_id, player_name, position, club, photo_url, flag_url
-      rosterTable: 'team_roster_view',
-
-      // Поле профиля пользователя для показа ника
-      profileNameField: 'manager_username',
-    };
-
-    // Маленькие утилиты
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
-
-    // Состояние
-    let sessionUser = null;
-    let allRows = [];
-
-    async function ensureAuth() {
-      // Берём текущую сессию (auth.js в проекте уже должен слушать onAuthStateChange)
-      const { data: { session } } = await supabase.auth.getSession();
-      sessionUser = session?.user || null;
-      if (!sessionUser) {
-        // нет сессии — редирект на логин
-        window.location.href = '/index.html';
-        return;
-      }
-      // Профиль
-      const email = sessionUser.email || 'user';
-      $('#userBox').textContent = email;
-    }
-
-    function renderTable(rows){
-      const body = $('#leaderBody');
-      if (!rows || !rows.length){
-        body.innerHTML = '<tr><td colspan="4" class="empty">Нет данных</td></tr>';
-        return;
-      }
-      body.innerHTML = rows.map((r, idx) => {
-        const me = (r.manager_id && sessionUser && r.manager_id === sessionUser.id) ? ' you' : '';
-        const uname = r[CFG.profileNameField] || r.manager_username || r.username || '—';
-        const team = r.team_name || r.team || 'Команда';
-        const pts = Number(r.total_points ?? r.points ?? 0).toFixed(1);
-        return `
-          <tr class="row${me}" data-team="${r.team_id}">
-            <td class="rank">${idx+1}</td>
-            <td class="team">${team}</td>
-            <td class="manager">${uname}</td>
-            <td class="points">${pts}</td>
-          </tr>`;
-      }).join('');
-
-      // Клики по строкам — показать состав
-      $$('#leaderBody tr').forEach(tr => {
-        tr.addEventListener('click', () => {
-          const teamId = tr.getAttribute('data-team');
-          const teamName = tr.querySelector('.team')?.textContent || 'Команда';
-          const manager = tr.querySelector('.manager')?.textContent || '';
-          showRoster(teamId, teamName, manager);
-          // подсветка выбранной строки
-          $$('#leaderBody tr').forEach(el => el.classList.remove('you'));
-          tr.classList.add('you');
-        });
-      });
-    }
-
-    async function fetchLeaderboard(mode = 'all'){
-      // mode: 'all' — общая сумма, 'last' — последний тур
-      const selectFields = 'team_id, team_name, total_points, last_tour_points, manager_username, manager_id';
-      let query = supabase.from(CFG.leaderboardView).select(selectFields);
-      if (mode === 'last') {
-        query = query.order('last_tour_points', { ascending: false, nullsFirst: false });
-      } else {
-        query = query.order('total_points', { ascending: false, nullsFirst: false });
-      }
-      const { data, error } = await query;
-      if (error) {
-        console.error('Leaderboard error:', error);
-        $('#leaderBody').innerHTML = `<tr><td colspan="4" class="empty">Ошибка загрузки: ${error.message}</td></tr>`;
-        return [];
-      }
-      return data || [];
-    }
-
-    async function showRoster(teamId, teamName, manager){
-      $('#sideTitle').textContent = `${teamName} — состав`;
-      $('#sideInfo').textContent = manager ? `Менеджер: ${manager}` : '';
-      const box = $('#roster');
-      box.innerHTML = '<div class="empty">Загрузка состава…</div>';
-
+    async function loadLeaderboard() {
       const { data, error } = await supabase
-        .from(CFG.rosterTable)
-        .select('player_id, player_name, position, club, photo_url, flag_url')
-        .eq('team_id', teamId)
-        .order('position', { ascending: true });
+        .from('user_teams')
+        .select('id, team_name, total_points');
 
       if (error) {
-        box.innerHTML = `<div class="empty">Ошибка загрузки состава: ${error.message}</div>`;
+        console.error(error);
         return;
       }
-      if (!data || !data.length){
-        box.innerHTML = '<div class="empty">Состав не найден</div>';
-        return;
-      }
-      box.innerHTML = data.map(p => `
-        <div class="player">
-          <img src="${p.photo_url || '/image/player-placeholder.png'}" alt="${p.player_name}">
-          <div>
-            <div><strong>${p.player_name}</strong></div>
-            <div class="meta">${p.position || ''} • ${p.club || ''}</div>
-          </div>
-        </div>
-      `).join('');
-    }
 
-    function applySearch(){
-      const q = ($('#search').value || '').trim().toLowerCase();
-      const rows = !q ? allRows : allRows.filter(r => {
-        return String(r.team_name || '')?.toLowerCase().includes(q) ||
-               String(r[CFG.profileNameField] || r.username || '')?.toLowerCase().includes(q);
-      });
-      renderTable(rows);
-    }
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      const { data: user } = await supabase.auth.getUser();
 
-    async function init(){
-      await ensureAuth();
+      data
+        .sort((a, b) => b.total_points - a.total_points)
+        .forEach((team, index) => {
+          const tr = document.createElement('tr');
+          if (team.id === user?.user?.id) {
+            tr.classList.add('me');
+          }
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${team.team_name}</td>
+            <td>${team.total_points ?? 0}</td>
+            <td><button data-id="${team.id}">Показать</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
 
-      // Загрузка лидерборда
-      const modeEl = $('#tourFilter');
-      const loadAndRender = async () => {
-        allRows = await fetchLeaderboard(modeEl.value);
-        renderTable(allRows);
-        // авто-показ моей команды (если есть)
-        const my = allRows.find(r => r.manager_id === sessionUser?.id);
-        if (my) {
-          showRoster(my.team_id, my.team_name, my[CFG.profileNameField] || '');
-        } else {
-          $('#roster').innerHTML = '<div class="empty">Ваша команда в таблице не найдена</div>';
-        }
-      };
-      await loadAndRender();
-
-      // Фильтры и поиск
-      $('#search').addEventListener('input', applySearch);
-      modeEl.addEventListener('change', loadAndRender);
-
-      // Кнопка «Найти меня»
-      $('#btnMe').addEventListener('click', () => {
-        const idx = allRows.findIndex(r => r.manager_id === sessionUser?.id);
-        if (idx === -1) return;
-        const tbody = $('#leaderBody');
-        const tr = tbody.children[idx];
-        if (tr) {
-          tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          tr.classList.add('you');
-          tr.click();
-        }
+      // Навешиваем события на кнопки
+      document.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => showRoster(btn.dataset.id));
       });
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    async function showRoster(teamId) {
+      const { data, error } = await supabase
+        .from('team_players')
+        .select('players(name, club, photo)')
+        .eq('team_id', teamId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const panel = document.getElementById('roster-panel');
+      const list = document.getElementById('roster-list');
+      list.innerHTML = '';
+
+      data.forEach(p => {
+        const player = p.players;
+        const card = document.createElement('div');
+        card.className = 'roster-card';
+        card.innerHTML = `
+          <img src="${player.photo || 'image/ball.svg'}" alt="">
+          <div class="name">${player.name}</div>
+          <div class="club">${player.club}</div>
+        `;
+        list.appendChild(card);
+      });
+
+      panel.classList.remove('hidden');
+    }
+
+    loadLeaderboard();
   </script>
 </body>
 </html>
