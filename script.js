@@ -626,6 +626,48 @@ async function saveRosterToDb() {
 
 /* ========== Инициализация страницы ========== */
 document.addEventListener("DOMContentLoaded", async () => {
+	// Проверка авторизации
+const user = supabase.auth.user();
+if (!user) {
+  // если пользователь не авторизован — редирект на страницу входа
+  window.location.href = "index.html";
+  return;
+}
+
+try {
+  // Получаем ник пользователя из таблицы profiles
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) throw profileError;
+
+  // Получаем название команды пользователя из таблицы user_teams
+  const { data: team, error: teamError } = await supabase
+    .from("user_teams")
+    .select("team_name")
+    .eq("user_id", user.id)
+    .single();
+
+  if (teamError) throw teamError;
+
+  // Обновляем элементы на странице
+  const welcomeEl = document.getElementById("welcome-message");
+  const teamEl = document.getElementById("team-name");
+
+  if (welcomeEl && profile?.username) {
+    welcomeEl.textContent = `Привет, ${profile.username}!`;
+  }
+
+  if (teamEl && team?.team_name) {
+    teamEl.textContent = `Название команды: ${team.team_name}`;
+  }
+} catch (err) {
+  console.error("Ошибка при получении данных пользователя:", err);
+}
+
   if (!ensureSupabase()) return;
 
   // 1) загрузим роли из БД чтобы получить dbId ролей (нужно для assign)

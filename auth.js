@@ -13,7 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   };
 
-  // Создание записи user_team после регистрации/входа
+  let currentUserTeamId = null;
+
+  // Универсальная функция создания/проверки user_team
   async function ensureUserTeam(user) {
     if (!user?.id) return;
 
@@ -26,22 +28,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!existingTeam) {
         const username = user.user_metadata?.username || "Игрок";
-        await supabase.from('user_teams').insert([{ user_id: user.id, team_name: username }]);
+        const { data, error } = await supabase
+          .from('user_teams')
+          .insert([{ user_id: user.id, team_name: username }]);
+        if (!error) currentUserTeamId = data[0].id;
+      } else {
+        currentUserTeamId = existingTeam.id;
       }
     } catch (err) {
       console.error("Ошибка при проверке/создании user_team:", err);
     }
   }
-let currentUserTeamId = null;
 
-async function fetchUserTeam(userId) {
-  const { data, error } = await supabase
-    .from('user_teams')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-  if (!error) currentUserTeamId = data.id;
-}
+  // Универсальная функция создания/проверки профиля
+  async function ensureUserProfile(user) {
+    if (!user?.id) return;
+
+    try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingProfile) {
+        const username = user.user_metadata?.username || "Игрок";
+        await supabase.from('profiles').insert([{ id: user.id, username }]);
+      }
+    } catch (err) {
+      console.error("Ошибка при проверке/создании профиля:", err);
+    }
+  }
+
+  // Общая функция после регистрации/входа
+  async function postAuthSetup(user) {
+    await ensureUserTeam(user);
+    await ensureUserProfile(user);
+  }
 
   // Регистрация
   registerForm?.addEventListener("submit", async (e) => {
@@ -56,7 +79,7 @@ async function fetchUserTeam(userId) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username } }
+        options: { data: { username } } // сохраняем ник в user_metadata
       });
 
       if (error) {
@@ -64,7 +87,7 @@ async function fetchUserTeam(userId) {
         return;
       }
 
-      if (data?.user) await ensureUserTeam(data.user);
+      if (data?.user) await postAuthSetup(data.user);
 
       alert("Регистрация успешна! Подтвердите email, затем войдите.");
     } catch (err) {
@@ -95,7 +118,7 @@ async function fetchUserTeam(userId) {
         return;
       }
 
-      await ensureUserTeam(user);
+      await postAuthSetup(user);
 
       // Редирект на дашборд
       window.location.href = "dashboard.html";
@@ -104,18 +127,14 @@ async function fetchUserTeam(userId) {
       alert("Не удалось войти. Попробуйте снова.");
     }
   });
-if (data?.user) {
-  await fetchUserTeam(data.user.id);
-  window.location.href = "dashboard.html";
-}
 
   // Подписка на изменения сессии
   try {
     if (window.supabase?.auth?.onAuthStateChange) {
       supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          await ensureUserTeam(session.user);
-          if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/" || window.location.pathname === "") {
+          await postAuthSetup(session.user);
+          if (["/", "/index.html", ""].includes(window.location.pathname)) {
             window.location.href = "dashboard.html";
           }
         }
