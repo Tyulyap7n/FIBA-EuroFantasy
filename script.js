@@ -202,11 +202,14 @@ async function loadPlayersFromSupabase() {
 async function loadTeamPlayers() {
   if (!ensureSupabase()) return;
   if (!currentUserTeamId) return;
+  if (!currentTourId) return; // убедимся, что тур задан
+
   try {
     const { data, error } = await supabase
       .from("team_players")
-      .select("id,team_id,player_id,role_id")
-      .eq("team_id", currentUserTeamId);
+      .select("id,team_id,player_id,role_id,tour_id")
+      .eq("team_id", currentUserTeamId)
+      .eq("tour_id", currentTourId); // фильтр по текущему туру
 
     if (error) throw error;
     teamPlayers = data || [];
@@ -222,12 +225,11 @@ async function loadTeamPlayers() {
       if (key) selectedRoles[key] = tp.player_id;
     });
 
-    logDebug("teamPlayers loaded, selectedRoles:", selectedRoles);
+    logDebug("teamPlayers loaded for current tour:", currentTourId, selectedRoles);
   } catch (err) {
     console.error("Ошибка загрузки team_players:", err);
   }
 }
-
 /* ========== Рисуем roster (слоты) ========== */
 function renderRoster() {
   ROLE_OPTIONS.forEach(opt => {
@@ -394,18 +396,19 @@ function initAddButtonDelegation() {
 /* roleDbId - целое число (roles.id) */
 async function assignPlayerToRoleDb(teamId, playerId, roleDbId) {
   if (!ensureSupabase()) return false;
-  if (!teamId || !playerId || !roleDbId) {
-    console.warn("assignPlayerToRoleDb: отсутствуют аргументы", { teamId, playerId, roleDbId });
+  if (!teamId || !playerId || !roleDbId || !currentTourId) {
+    console.warn("assignPlayerToRoleDb: отсутствуют аргументы", { teamId, playerId, roleDbId, currentTourId });
     return false;
   }
 
   try {
-    // ищем существующую строку для этой team + role
+    // ищем существующую строку для этой team + role + tour
     const { data: existing, error: fetchErr } = await supabase
       .from("team_players")
       .select("id,player_id")
       .eq("team_id", teamId)
       .eq("role_id", roleDbId)
+      .eq("tour_id", currentTourId) // фильтр по туру
       .limit(1)
       .maybeSingle();
 
@@ -423,13 +426,12 @@ async function assignPlayerToRoleDb(teamId, playerId, roleDbId) {
       // вставляем новую запись
       const { error: insErr } = await supabase
         .from("team_players")
-        .insert([{ team_id: teamId, player_id: playerId, role_id: roleDbId }]);
+        .insert([{ team_id: teamId, player_id: playerId, role_id: roleDbId, tour_id: currentTourId }]); // указываем тур
 
       if (insErr) throw insErr;
     }
 
     // обновим локально selectedRoles и перерисуем roster
-    // найдём ключ роли
     const roleOpt = ROLE_OPTIONS.find(o => o.dbId === roleDbId);
     if (roleOpt) selectedRoles[roleOpt.key] = playerId;
     await loadTeamPlayers(); // подгрузим актуальные данные с сервера
@@ -441,6 +443,7 @@ async function assignPlayerToRoleDb(teamId, playerId, roleDbId) {
     return false;
   }
 }
+
 
 /* ========== Круговой селектор ролей (UI) ========== */
 let selectorOverlay = null;
@@ -704,5 +707,6 @@ try {
     });
   });
 });
+
 
 
