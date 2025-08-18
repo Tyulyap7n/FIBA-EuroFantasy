@@ -142,42 +142,34 @@
   );
 
   // === 2. Получение пользователя и лидерборд ===
-  async function loadLeaderboard() {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) console.error(userError);
+async function loadLeaderboard() {
+  const { data, error } = await supabase
+    .from('user_teams')
+    .select('id, team_name'); // убрали total_points
 
-    const { data, error } = await supabase
-      .from('user_teams')
-      .select('id, team_name, total_points');
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    const tbody = document.getElementById('leaderboard-body');
-    tbody.innerHTML = '';
-
-    data
-      .sort((a, b) => b.total_points - a.total_points)
-      .forEach((team, index) => {
-        const tr = document.createElement('tr');
-        if (team.id === user?.id) {
-          tr.classList.add('me');
-        }
-        tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${team.team_name}</td>
-          <td>${team.total_points ?? 0}</td>
-          <td><button data-id="${team.id}">Показать</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-    document.querySelectorAll('button[data-id]').forEach(btn => {
-      btn.addEventListener('click', () => showRoster(btn.dataset.id));
-    });
+  if (error) {
+    console.error('Ошибка загрузки команд:', error);
+    return;
   }
+
+  const tbody = document.querySelector('#leaderboard tbody');
+  tbody.innerHTML = '';
+
+  data.forEach((team, index) => {
+    const tr = document.createElement('tr');
+    if (team.id === user?.id) {
+      tr.classList.add('me');
+    }
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${team.team_name}</td>
+      <td>0</td> <!-- временно, очки можно будет считать отдельно -->
+      <td><button data-id="${team.id}">Показать</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 
   async function showRoster(teamId) {
     const { data, error } = await supabase
@@ -213,4 +205,5 @@
 </script>
 </body>
 </html>
+
 
