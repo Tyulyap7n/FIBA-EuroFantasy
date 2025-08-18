@@ -8,62 +8,72 @@
   .leaderboard-page { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
   .leaderboard-page h1 { font-family: 'Petrov Sans', sans-serif; font-size: 2.2rem; margin-bottom: 1rem; text-align:center; color:var(--yellow); }
 /* === LEADERBOARD TABLE === */
+/* === LEADERBOARD TABLE === */
 .leaderboard-table {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background: transparent;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(0,0,0,0.5);
+  background: #2a2a2a;
 }
 
-.leaderboard-table th, .leaderboard-table td {
-  padding: 8px;
-  text-align: center;
-  border: 1px solid var(--white);
-  vertical-align: middle;
+.leaderboard-table thead {
+  background: var(--purple);
 }
 
 .leaderboard-table th {
-  background: rgba(255,255,255,0.04);
-  font-weight: 700;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--white);
   text-transform: uppercase;
 }
 
-.leaderboard-table tbody tr {
-  background: var(--purple);
-  transition: background .18s, color .18s;
+.leaderboard-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #444;
+  font-size: 0.95rem;
+  color: var(--white);
 }
 
-.leaderboard-table tbody tr:hover {
-  background: var(--orange);
-  color: var(--black);
+.leaderboard-table tr:nth-child(even) {
+  background: #222;
 }
 
-.leaderboard-table tbody td img {
-  width: 48px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 6px;
+.leaderboard-table tr:hover {
+  background: rgba(254,100,28,0.15);
+  transition: background 0.2s ease-in-out;
 }
 
+.leaderboard-table tr.me {
+  background: rgba(253,230,0,0.25);
+  font-weight: bold;
+}
+
+/* Кнопка "Состав" в стиле дашборда */
 .leaderboard-table .show-lineup {
-  padding: 4px 8px;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  background: var(--yellow);
-  color: var(--black);
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--orange);
+  color: var(--white);
+  font-weight: 600;
   cursor: pointer;
-  transition: transform .12s ease, opacity .12s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+  border: none;
 }
 
 .leaderboard-table .show-lineup:hover {
   transform: translateY(-2px);
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
-/* Дополнительно выделяем итоговую колонку */
-.leaderboard-table td:last-child {
+/* Итоговая колонка (Total points) выделена */
+.leaderboard-table td.total {
   font-weight: bold;
-  font-size: 1.1rem;
+  color: var(--yellow);
 }
 
 
@@ -275,4 +285,5 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
