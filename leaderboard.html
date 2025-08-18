@@ -297,6 +297,12 @@ async function calculateTeamPoints(teamId, currentTour = 1) {
   });
   return Math.round(total);
 }
+const { data: existingScore, error } = await supabase
+  .from("scores")
+  .select("id,total_points")
+  .eq("team_id", teamId)
+  .eq("tour_id", currentTourId)
+  .maybeSingle();
 
 async function loadLeaderboard() {
   const { data: teams } = await supabase.from('user_teams').select('id, team_name');
@@ -409,6 +415,7 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
 
 
