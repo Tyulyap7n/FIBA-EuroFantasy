@@ -192,11 +192,19 @@ async function loadLeaderboard() {
 async function showRoster(teamId) {
   const { data, error } = await supabase
     .from('team_players')
-    .select('players(name, club, photo)')
+    .select(`
+      player_id (
+        first_name,
+        last_name,
+        position,
+        country,
+        photo_url
+      )
+    `)
     .eq('team_id', teamId);
 
   if (error) {
-    console.error(error);
+    console.error('Ошибка showRoster:', error);
     return;
   }
 
@@ -205,20 +213,20 @@ async function showRoster(teamId) {
   list.innerHTML = '';
 
   data.forEach(p => {
-    const player = p.players;
+    const player = p.player_id; // вложенный объект
     const card = document.createElement('div');
     card.className = 'roster-card';
     card.innerHTML = `
-      <img src="${player.photo || 'image/ball.svg'}" alt="">
-      <div class="name">${player.name}</div>
-      <div class="club">${player.club}</div>
+      <img src="${player.photo_url || 'image/ball.svg'}" alt="">
+      <div class="name">${player.first_name} ${player.last_name}</div>
+      <div class="club">${player.country}</div>
+      <div class="position">${player.position}</div>
     `;
     list.appendChild(card);
   });
 
   panel.classList.remove('hidden');
 }
-
 
   // === 5. Инициализация ===
   (async () => {
@@ -228,6 +236,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
