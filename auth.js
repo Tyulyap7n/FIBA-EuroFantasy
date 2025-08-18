@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentUserTeamId = null;
 
-  // Универсальная функция создания/проверки user_team
+  // Создание или получение user_team
   async function ensureUserTeam(user) {
     if (!user?.id) return;
 
@@ -31,7 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const { data, error } = await supabase
           .from('user_teams')
           .insert([{ user_id: user.id, team_name: username }]);
-        if (!error) currentUserTeamId = data[0].id;
+
+        if (!error && data?.[0]) currentUserTeamId = data[0].id;
       } else {
         currentUserTeamId = existingTeam.id;
       }
@@ -40,30 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Универсальная функция создания/проверки профиля
-  async function ensureUserProfile(user) {
-    if (!user?.id) return;
-
-    try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (!existingProfile) {
-        const username = user.user_metadata?.username || "Игрок";
-        await supabase.from('profiles').insert([{ id: user.id, username }]);
-      }
-    } catch (err) {
-      console.error("Ошибка при проверке/создании профиля:", err);
-    }
-  }
-
   // Общая функция после регистрации/входа
   async function postAuthSetup(user) {
     await ensureUserTeam(user);
-    await ensureUserProfile(user);
   }
 
   // Регистрация
