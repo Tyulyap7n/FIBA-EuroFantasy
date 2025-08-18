@@ -172,12 +172,13 @@ async function calculateTeamPoints(teamId) {
     if (!formula) return;
 
     const context = {
-      PTS: stats.points || 0,
-      AST: stats.assists || 0,
-      REB: stats.rebounds || 0,
-      STL: stats.steals || 0,
-      BLK: stats.blocks || 0,
-      TO:  stats.turnover  || 0,
+      points: stats.points || 0,
+      assists: stats.assists || 0,
+      rebounds: stats.rebounds || 0,
+      steals: stats.steals || 0,
+      blocks: stats.blocks || 0,
+      turnover:  stats.turnover  || 0,
+      threes: stats.threes || 0,
       count: stats.count || 1
     };
 
@@ -277,6 +278,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
