@@ -112,7 +112,7 @@
 
 /* Карточка игрока */
 .roster-card {
-  background: #1c1c1c; /* Тёмный фон */
+  background: var(--purple);  /* Тёмный фон */
   border-radius: 12px; /* Скругление углов */
   padding: 0.8rem; /* Внутренние отступы */
   text-align: center; /* Выравнивание содержимого по центру */
@@ -133,12 +133,13 @@
   font-size: 0.9rem; /* Размер текста */
   font-weight: bold; /* Жирный шрифт */
   margin-bottom: 0.3rem; /* Отступ снизу */
+  color: var(--yellow); /* Цвет текста */
 }
 
 /* Клуб/страна игрока */
 .roster-card .club {
   font-size: 0.8rem; /* Размер текста */
-  color: var(--muted); /* Цвет текста */
+  color: var(--yellow); /* Цвет текста */
 }
 
 /* Очки игрока */
@@ -348,6 +349,7 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
 
 
