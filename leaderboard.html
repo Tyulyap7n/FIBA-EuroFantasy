@@ -150,64 +150,75 @@ let currentUser = null;
   }
 
   // === 3. Загрузка таблицы лидерборда ===
-  async function loadLeaderboard() {
-    const { data, error } = await supabase
-      .from('user_teams')
-      .select('id, team_name');
+  // === 3. Загрузка таблицы лидерборда ===
+async function loadLeaderboard() {
+  const { data, error } = await supabase
+    .from('user_teams')
+    .select('id, team_name');
 
-    if (error) {
-      console.error('Ошибка загрузки команд:', error);
-      return;
-    }
-
-    const tbody = document.getElementById('leaderboard-body');
-    tbody.innerHTML = '';
-
-    data.forEach((team, index) => {
-      const tr = document.createElement('tr');
-      if (team.id === currentUser?.id) {
-        tr.classList.add('me');
-      }
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${team.team_name}</td>
-        <td>0</td>
-        <td><button data-id="${team.id}">Показать</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
+  if (error) {
+    console.error('Ошибка загрузки команд:', error);
+    return;
   }
+
+  const tbody = document.getElementById('leaderboard-body');
+  tbody.innerHTML = '';
+
+  data.forEach((team, index) => {
+    const tr = document.createElement('tr');
+    if (team.id === currentUser?.id) {
+      tr.classList.add('me');
+    }
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${team.team_name}</td>
+      <td>0</td>
+      <td><button class="show-roster-btn" data-id="${team.id}">Показать</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // === ВАЖНО: навешиваем события после отрисовки строк ===
+  document.querySelectorAll('.show-roster-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const teamId = btn.dataset.id;
+      showRoster(teamId);
+    });
+  });
+}
+
 
   // === 4. Показ состава команды ===
-  async function showRoster(teamId) {
-    const { data, error } = await supabase
-      .from('team_players')
-      .select('players(name, club, photo)')
-      .eq('team_id', teamId);
+async function showRoster(teamId) {
+  const { data, error } = await supabase
+    .from('team_players')
+    .select('players(name, club, photo)')
+    .eq('team_id', teamId);
 
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    const panel = document.getElementById('roster-panel');
-    const list = document.getElementById('roster-list');
-    list.innerHTML = '';
-
-    data.forEach(p => {
-      const player = p.players;
-      const card = document.createElement('div');
-      card.className = 'roster-card';
-      card.innerHTML = `
-        <img src="${player.photo || 'image/ball.svg'}" alt="">
-        <div class="name">${player.name}</div>
-        <div class="club">${player.club}</div>
-      `;
-      list.appendChild(card);
-    });
-
-    panel.classList.remove('hidden');
+  if (error) {
+    console.error(error);
+    return;
   }
+
+  const panel = document.getElementById('roster-panel');
+  const list = document.getElementById('roster-list');
+  list.innerHTML = '';
+
+  data.forEach(p => {
+    const player = p.players;
+    const card = document.createElement('div');
+    card.className = 'roster-card';
+    card.innerHTML = `
+      <img src="${player.photo || 'image/ball.svg'}" alt="">
+      <div class="name">${player.name}</div>
+      <div class="club">${player.club}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  panel.classList.remove('hidden');
+}
+
 
   // === 5. Инициализация ===
   (async () => {
@@ -217,6 +228,7 @@ let currentUser = null;
 </script>
 </body>
 </html>
+
 
 
 
