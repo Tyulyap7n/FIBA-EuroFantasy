@@ -32,6 +32,28 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+  .site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--purple);
+  padding: 10px 20px;
+  border-bottom: 4px solid var(--yellow);
+}
+.site-header img.logo { height: 50px; display:block; }
+.header-links { display:flex; gap:20px; align-items:center; }
+.header-link { color: var(--white); text-decoration: none; font-weight: 700; }
+.header-link:hover { color: var(--yellow); }
+
+/* Alternative/custom header usage */
+.custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--black);
+  border-bottom: 3px solid var(--white);
+}
 /* Основной контейнер страницы лидерборда */
 .leaderboard-page {
   max-width: 1200px; /* Ограничиваем максимальную ширину страницы */
@@ -162,6 +184,11 @@
 
 </head>
 <body>
+  <header class="site-header">
+  <div class="logo-container">
+    <a href="sample.html"> <img src="/image/logo.jpg" alt="logo"></a>
+  </div>
+</header>
 <div class="leaderboard-page">
   <h1>Турнирная таблица</h1>
   <table class="leaderboard-table">
@@ -359,6 +386,7 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
 
 
