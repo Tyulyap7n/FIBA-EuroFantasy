@@ -141,36 +141,44 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E" // вставь свой anon key
   );
 
-  // === 2. Получение пользователя и лидерборд ===
-async function loadLeaderboard() {
-  const { data, error } = await supabase
-    .from('user_teams')
-    .select('id, team_name'); // убрали total_points
+let currentUser = null;
 
-  if (error) {
-    console.error('Ошибка загрузки команд:', error);
-    return;
+  // === 2. Получаем авторизованного пользователя ===
+  async function getCurrentUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUser = user;
   }
 
-  const tbody = document.getElementById('leaderboard-body');
-  tbody.innerHTML = '';
+  // === 3. Загрузка таблицы лидерборда ===
+  async function loadLeaderboard() {
+    const { data, error } = await supabase
+      .from('user_teams')
+      .select('id, team_name');
 
-  data.forEach((team, index) => {
-    const tr = document.createElement('tr');
-    if (team.id === user?.id) {
-      tr.classList.add('me');
+    if (error) {
+      console.error('Ошибка загрузки команд:', error);
+      return;
     }
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${team.team_name}</td>
-      <td>0</td> <!-- временно, очки можно будет считать отдельно -->
-      <td><button data-id="${team.id}">Показать</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
 
+    const tbody = document.getElementById('leaderboard-body');
+    tbody.innerHTML = '';
 
+    data.forEach((team, index) => {
+      const tr = document.createElement('tr');
+      if (team.id === currentUser?.id) {
+        tr.classList.add('me');
+      }
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${team.team_name}</td>
+        <td>0</td>
+        <td><button data-id="${team.id}">Показать</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // === 4. Показ состава команды ===
   async function showRoster(teamId) {
     const { data, error } = await supabase
       .from('team_players')
@@ -201,10 +209,15 @@ async function loadLeaderboard() {
     panel.classList.remove('hidden');
   }
 
-  loadLeaderboard();
+  // === 5. Инициализация ===
+  (async () => {
+    await getCurrentUser();
+    await loadLeaderboard();
+  })();
 </script>
 </body>
 </html>
+
 
 
 
