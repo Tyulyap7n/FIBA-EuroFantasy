@@ -101,7 +101,11 @@ button, input, select, textarea {
 }
 .topbar .logo-link { color: var(--yellow); text-decoration:none; font-weight:700; }
 .site-title { font-weight:800; letter-spacing:2px; }
-
+a img {
+  height: 50px;
+  width: auto;
+  display: block; /* чтобы убрать возможные отступы под изображением */
+}  
 /* Header button */
 .header-btn {
   background: var(--purple);
@@ -438,3 +442,4 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
