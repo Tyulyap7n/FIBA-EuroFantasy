@@ -562,6 +562,39 @@ function closeRoleSelector() {
   if (selectorEl) { selectorEl.classList.remove("show"); setTimeout(()=>selectorEl?.remove(),180); selectorEl = null; }
   document.removeEventListener("keydown", escCloseOnce);
 }
+// Сохраняет очки команды в текущем туре
+async function saveTeamScore(teamId, totalPoints) {
+  if (!ensureSupabase()) return;
+
+  const { data, error } = await supabase
+    .from("scores")
+    .upsert({
+      team_id: teamId,
+      tour_id: currentTourId,
+      total_points: totalPoints
+    }, { onConflict: ['team_id', 'tour_id'] });
+
+  if (error) {
+    console.error("Ошибка при сохранении очков команды:", error);
+  }
+}
+
+// Получает очки всех команд для текущего тура
+async function loadScoresForCurrentTour() {
+  if (!ensureSupabase()) return [];
+
+  const { data: scores, error } = await supabase
+    .from("scores")
+    .select("team_id,total_points")
+    .eq("tour_id", currentTourId);
+
+  if (error) {
+    console.error("Ошибка загрузки очков:", error);
+    return [];
+  }
+
+  return scores;
+}
 
 /* ========== Init фильтров / кнопок панели и обработчики ========== */
 function initTableFilters() {
@@ -733,6 +766,7 @@ try {
     });
   });
 });
+
 
 
 
