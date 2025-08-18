@@ -226,33 +226,102 @@
       });
     }
 
-    async function showRoster(teamId) {
-      const { data, error } = await supabase
-        .from('team_players')
-        .select(`player_id (first_name, last_name, position, country, photo_url)`)
-        .eq('team_id', teamId);
+    async function showRoster(teamId, currentTour = 1) {
+  // 1. Получаем игроков команды вместе со статистикой за тур
+  const { data: teamPlayers, error: tpError } = await supabase
+    .from('team_players')
+    .select('player_id, role_id (formula)')
+    .eq('team_id', teamId);
 
-      if (error) { console.error('Ошибка showRoster:', error); return; }
+  if (tpError) {
+    console.error('Ошибка showRoster team_players:', tpError);
+    return;
+  }
 
-      const panel = document.getElementById('roster-panel');
-      const list = document.getElementById('roster-list');
-      list.innerHTML = '';
+  if (!teamPlayers || teamPlayers.length === 0) {
+    console.warn(`Команда ${teamId} не содержит игроков`);
+    return;
+  }
 
-      data.forEach(p => {
-        const player = p.player_id;
-        const card = document.createElement('div');
-        card.className = 'roster-card';
-        card.innerHTML = `
-          <img src="${player.photo_url || 'image/ball.svg'}" alt="">
-          <div class="name">${player.first_name} ${player.last_name}</div>
-          <div class="club">${player.country}</div>
-          <div class="position">${player.position}</div>
-        `;
-        list.appendChild(card);
-      });
+  const playerIds = teamPlayers.map(p => p.player_id);
 
-      panel.classList.remove('hidden');
+  const { data: statsData, error: statsError } = await supabase
+    .from('player_stats')
+    .select('*')
+    .in('player_id', playerIds)
+    .eq('tour', currentTour);
+
+  if (statsError) {
+    console.error('Ошибка showRoster player_stats:', statsError);
+    return;
+  }
+
+  const statsMap = {};
+  statsData.forEach(s => statsMap[s.player_id] = s);
+
+  // 2. Получаем данные игроков (имя, фото и т.д.)
+  const { data: playersData, error: playersError } = await supabase
+    .from('players')
+    .select('*')
+    .in('id', playerIds);
+
+  if (playersError) {
+    console.error('Ошибка showRoster players:', playersError);
+    return;
+  }
+
+  const playersMap = {};
+  playersData.forEach(p => playersMap[p.id] = p);
+
+  // 3. Рисуем панель состава
+  const panel = document.getElementById('roster-panel');
+  const list = document.getElementById('roster-list');
+  list.innerHTML = '';
+
+  teamPlayers.forEach(p => {
+    const stats = statsMap[p.player_id] || {};
+    const formula = p.role_id?.formula;
+    const player = playersMap[p.player_id];
+
+    if (!player) return;
+
+    // Вычисляем очки по формуле роли
+    let points = 0;
+    if (formula) {
+      const context = {
+        points: stats.points || 0,
+        assists: stats.assists || 0,
+        rebounds: stats.rebounds || 0,
+        steals: stats.steals || 0,
+        blocks: stats.blocks || 0,
+        turnover: stats.turnover || 0,
+        threes: stats.threes || 0,
+        count: stats.count || 1
+      };
+
+      try {
+        const fn = new Function(...Object.keys(context), `return (${formula});`);
+        points = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+      } catch (e) {
+        console.error('Ошибка расчёта очков для игрока', player.first_name, player.last_name, e);
+      }
     }
+
+    const card = document.createElement('div');
+    card.className = 'roster-card';
+    card.innerHTML = `
+      <img src="${player.photo_url || 'image/ball.svg'}" alt="">
+      <div class="name">${player.first_name} ${player.last_name}</div>
+      <div class="points">Очки: ${Math.round(points)}</div>
+      <div class="club">${player.country}</div>
+      <div class="position">${player.position}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  panel.classList.remove('hidden');
+}
+
 
     (async () => {
       await getCurrentUser();
@@ -261,6 +330,7 @@
   </script>
 </body>
 </html>
+
 
 
 
