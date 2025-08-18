@@ -135,8 +135,7 @@
 
   <!-- Модули -->
   <script type="module">
-    import { supabase } from './supabaseClient.js';
-
+	const { data: { user }, error } = await supabase.auth.getUser();
     async function loadLeaderboard() {
       const { data, error } = await supabase
         .from('user_teams')
