@@ -131,78 +131,85 @@
   </div>
 
   <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Модули -->
-  <script type="module">
-	const { data: { user }, error } = await supabase.auth.getUser();
-    async function loadLeaderboard() {
-      const { data, error } = await supabase
-        .from('user_teams')
-        .select('id, team_name, total_points');
+<script type="module">
+  // === 1. Инициализация клиента ===
+  const supabase = window.supabase.createClient(
+    "https://YOUR-PROJECT.supabase.co", // вставь свой URL
+    "YOUR-ANON-KEY" // вставь свой anon key
+  );
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+  // === 2. Получение пользователя и лидерборд ===
+  async function loadLeaderboard() {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) console.error(userError);
 
-      const tbody = document.getElementById('leaderboard-body');
-      tbody.innerHTML = '';
-      const { data: user } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('user_teams')
+      .select('id, team_name, total_points');
 
-      data
-        .sort((a, b) => b.total_points - a.total_points)
-        .forEach((team, index) => {
-          const tr = document.createElement('tr');
-          if (team.id === user?.user?.id) {
-            tr.classList.add('me');
-          }
-          tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${team.team_name}</td>
-            <td>${team.total_points ?? 0}</td>
-            <td><button data-id="${team.id}">Показать</button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-      // Навешиваем события на кнопки
-      document.querySelectorAll('button[data-id]').forEach(btn => {
-        btn.addEventListener('click', () => showRoster(btn.dataset.id));
-      });
+    if (error) {
+      console.error(error);
+      return;
     }
 
-    async function showRoster(teamId) {
-      const { data, error } = await supabase
-        .from('team_players')
-        .select('players(name, club, photo)')
-        .eq('team_id', teamId);
+    const tbody = document.getElementById('leaderboard-body');
+    tbody.innerHTML = '';
 
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const panel = document.getElementById('roster-panel');
-      const list = document.getElementById('roster-list');
-      list.innerHTML = '';
-
-      data.forEach(p => {
-        const player = p.players;
-        const card = document.createElement('div');
-        card.className = 'roster-card';
-        card.innerHTML = `
-          <img src="${player.photo || 'image/ball.svg'}" alt="">
-          <div class="name">${player.name}</div>
-          <div class="club">${player.club}</div>
+    data
+      .sort((a, b) => b.total_points - a.total_points)
+      .forEach((team, index) => {
+        const tr = document.createElement('tr');
+        if (team.id === user?.id) {
+          tr.classList.add('me');
+        }
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${team.team_name}</td>
+          <td>${team.total_points ?? 0}</td>
+          <td><button data-id="${team.id}">Показать</button></td>
         `;
-        list.appendChild(card);
+        tbody.appendChild(tr);
       });
 
-      panel.classList.remove('hidden');
+    document.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', () => showRoster(btn.dataset.id));
+    });
+  }
+
+  async function showRoster(teamId) {
+    const { data, error } = await supabase
+      .from('team_players')
+      .select('players(name, club, photo)')
+      .eq('team_id', teamId);
+
+    if (error) {
+      console.error(error);
+      return;
     }
 
-    loadLeaderboard();
-  </script>
+    const panel = document.getElementById('roster-panel');
+    const list = document.getElementById('roster-list');
+    list.innerHTML = '';
+
+    data.forEach(p => {
+      const player = p.players;
+      const card = document.createElement('div');
+      card.className = 'roster-card';
+      card.innerHTML = `
+        <img src="${player.photo || 'image/ball.svg'}" alt="">
+        <div class="name">${player.name}</div>
+        <div class="club">${player.club}</div>
+      `;
+      list.appendChild(card);
+    });
+
+    panel.classList.remove('hidden');
+  }
+
+  loadLeaderboard();
+</script>
 </body>
 </html>
