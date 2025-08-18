@@ -410,11 +410,24 @@ async function showRoster(teamId, currentTour=1){
 
   panel.classList.remove('hidden');
 }
+async function renderLeaderboard() {
+  const scores = await loadScoresForCurrentTour();
+  const leaderboardEl = document.getElementById("leaderboard");
+  leaderboardEl.innerHTML = "";
+
+  scores.forEach((s, idx) => {
+    const row = document.createElement("div");
+    row.className = "leaderboard-row";
+    row.textContent = `${idx + 1}. Team ${s.team_id}: ${s.total_points} pts`;
+    leaderboardEl.appendChild(row);
+  });
+}
 
 (async()=>{ await getCurrentUser(); await loadLeaderboard(); })();
 </script>
 </body>
 </html>
+
 
 
 
