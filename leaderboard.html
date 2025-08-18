@@ -3,21 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <title>Leaderboard — EuroFantasy</title>
-<link rel="stylesheet" href="style.css">
 <style>
-/* === LEADERBOARD PAGE === */
-.leaderboard-page { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
-.leaderboard-page h1 { font-family: 'Petrov Sans', sans-serif; font-size: 2.2rem; margin-bottom: 1rem; text-align: center; color: var(--yellow); }
-.leaderboard-table { width: 100%; border-collapse: collapse; background: #2a2a2a; border-radius: 16px; overflow: hidden; box-shadow: 0 0 25px rgba(0,0,0,0.5);}
-.leaderboard-table th, .leaderboard-table td { padding: 0.8rem 1rem; text-align: center; font-size: 0.95rem; color: var(--white); border-bottom: 1px solid #444; }
-.leaderboard-table thead { background: var(--purple); }
-.leaderboard-table tr:nth-child(even) { background: #222; }
-.leaderboard-table tr:hover { background: rgba(254,100,28,0.15); transition: background 0.2s ease-in-out; }
-.roster-panel { margin-top: 2rem; background: #2a2a2a; border-radius: 16px; padding: 1.5rem; max-height: 400px; overflow-y: auto; box-shadow: 0 0 15px rgba(0,0,0,0.4);}
-.roster-card { background: #1c1c1c; border-radius: 12px; padding: 0.8rem; text-align: center; box-shadow: 0 0 8px rgba(0,0,0,0.4); margin-bottom: 0.5rem;}
-.roster-card img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;}
-.name { font-weight: bold; margin-bottom: 0.2rem; }
-.stats { font-size: 0.85rem; color: #fefefe; }
+  /* === LEADERBOARD PAGE === */
+  .leaderboard-page { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
+  .leaderboard-page h1 { font-family: 'Petrov Sans', sans-serif; font-size: 2.2rem; margin-bottom: 1rem; text-align:center; color:var(--yellow); }
+  .leaderboard-table { width:100%; border-collapse:collapse; background:#2a2a2a; border-radius:16px; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,0.5);}
+  .leaderboard-table th, .leaderboard-table td { padding:0.8rem 1rem; text-align:left; font-size:0.95rem; color:#fff;}
+  .leaderboard-table th { font-weight:bold; text-transform:uppercase; background:purple;}
+  .leaderboard-table tr:nth-child(even){background:#222;}
+  .leaderboard-table tr:hover{background:rgba(254,100,28,0.15);transition:0.2s;}
+  .leaderboard-table tr.me{background:rgba(253,230,0,0.25); font-weight:bold;}
+
+  .roster-panel { margin-top:2rem; background:#2a2a2a; border-radius:16px; padding:1.5rem; max-height:500px; overflow-y:auto; box-shadow:0 0 15px rgba(0,0,0,0.4);}
+  .roster-panel h2 { color:orange; font-size:1.6rem; margin-bottom:1rem; }
+  .roster-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:1rem; }
+  .roster-card { background:#1c1c1c; border-radius:12px; padding:0.8rem; text-align:center; box-shadow:0 0 8px rgba(0,0,0,0.4);}
+  .roster-card img { width:64px; height:64px; border-radius:50%; object-fit:cover; margin-bottom:0.5rem; }
+  .roster-card .name { font-size:0.9rem; font-weight:bold; margin-bottom:0.3rem; }
+  .roster-card .club { font-size:0.8rem; color:#aaa; }
+  .roster-card .points { font-size:0.85rem; color:yellow; margin-bottom:0.3rem; }
 </style>
 </head>
 <body>
@@ -31,9 +35,9 @@
         <th>Тур 2-3</th>
         <th>Тур 4</th>
         <th>Тур 5</th>
-        <th>1/8 Финала</th>
-        <th>1/4 Финала</th>
-        <th>1/2 Финала</th>
+        <th>1/8</th>
+        <th>1/4</th>
+        <th>1/2</th>
         <th>Финалы</th>
         <th>Итого</th>
       </tr>
@@ -43,7 +47,7 @@
 
   <div class="roster-panel hidden" id="roster-panel">
     <h2>Состав команды</h2>
-    <div id="roster-list"></div>
+    <div class="roster-list" id="roster-list"></div>
   </div>
 </div>
 
@@ -51,158 +55,170 @@
 <script type="module">
 const supabase = window.supabase.createClient(
   "https://xovxokupvsnnjtskdgvr.supabase.co",
-  "YOUR_ANON_KEY"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 
-const TOURS = ["1", "2-3", "4", "5", "1/8", "1/4", "1/2", "Финалы"];
+const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
 
 let currentUser = null;
+
 async function getCurrentUser() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
 }
 
-async function calculateTeamPointsForTour(teamId, tourNumber) {
-  // tourNumber может быть номером тура или массивом туров ["2","3"]
-  let tourFilter = Array.isArray(tourNumber) ? tourNumber : [tourNumber];
-
-  const { data, error } = await supabase
+async function calculateTeamPoints(teamId, currentTour = 1) {
+  const { data: teamPlayers, error: tpError } = await supabase
     .from('team_players')
-    .select(`
-      player:player_id (stats),
-      role:role_id (formula)
-    `)
+    .select('player_id, role_id (formula)')
     .eq('team_id', teamId);
+  if (tpError) return 0;
 
-  if (error || !data) {
-    console.error('Ошибка team_players:', error);
-    return 0;
-  }
+  if (!teamPlayers || teamPlayers.length === 0) return 0;
 
-  let total = 0;
+  const playerIds = teamPlayers.map(p => p.player_id);
 
-  for (const [index, p] of data.entries()) {
-    const statsAll = p.player?.stats || {};
-    const formula = p.role?.formula;
-    if (!formula) continue;
+  const { data: statsData } = await supabase
+    .from('player_stats')
+    .select('*')
+    .in('player_id', playerIds)
+    .eq('tour', currentTour);
 
-    // суммируем очки за указанный тур/туры
-    let tourPoints = 0;
-    for (const t of tourFilter) {
-      const stats = statsAll[t] || {}; // stats должны быть по тур
-      const context = {
-        points: stats.points || 0,
-        assists: stats.assists || 0,
-        rebounds: stats.rebounds || 0,
-        steals: stats.steals || 0,
-        blocks: stats.blocks || 0,
-        turnover: stats.turnover || 0,
-        threes: stats.threes || 0,
-        count: stats.count || 1
-      };
-      try {
-        const fn = new Function(...Object.keys(context), `return (${formula});`);
-        const result = fn(...Object.values(context));
-        tourPoints += isNaN(result) ? 0 : result;
-      } catch(e) {
-        console.error('Ошибка в формуле:', formula, e);
-      }
-    }
+  const statsMap = {};
+  (statsData||[]).forEach(s => statsMap[s.player_id]=s);
 
-    total += tourPoints;
-  }
+  let total=0;
+  teamPlayers.forEach(p=>{
+    const stats=statsMap[p.player_id]||{};
+    const formula=p.role_id?.formula;
+    if (!formula) return;
 
+    const context = {
+      points: stats.points||0,
+      assists: stats.assists||0,
+      rebounds: stats.rebounds||0,
+      steals: stats.steals||0,
+      blocks: stats.blocks||0,
+      turnover: stats.turnover||0,
+      threes: stats.threes||0,
+      count: stats.count||1
+    };
+    try{
+      const fn=new Function(...Object.keys(context),`return (${formula});`);
+      total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+    }catch(e){console.error('Ошибка расчёта формулы:',formula,e);}
+  });
   return Math.round(total);
 }
 
 async function loadLeaderboard() {
-  const { data: teams, error } = await supabase.from('user_teams').select('id, team_name');
-  if (error || !teams) return console.error('Ошибка загрузки команд:', error);
-
+  const { data: teams } = await supabase.from('user_teams').select('id, team_name');
   const tbody = document.getElementById('leaderboard-body');
-  tbody.innerHTML = '';
+  tbody.innerHTML='';
 
-  for (const team of teams) {
-    let row = document.createElement('tr');
-    row.innerHTML = `<td>${team.team_name}</td>`;
-    let totalSum = 0;
+  for(const team of teams){
+    const row=document.createElement('tr');
+    let totalSum=0;
+    row.innerHTML=`<td>${team.team_name}</td>`;
 
-    for (const tour of TOURS) {
-      let points = await calculateTeamPointsForTour(team.id, tour);
+    for(const tour of TOURS){
+      const tourNumbers = tour.includes("-") ? tour.split("-").map(Number) : [tour=="Финалы"?99:Number(tour)];
+      let points=0;
+      for(const t of tourNumbers) points += await calculateTeamPoints(team.id, t);
       totalSum += points;
 
-      let cell = document.createElement('td');
+      const cell=document.createElement('td');
       cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">Состав</button>`;
       row.appendChild(cell);
     }
 
-    let totalCell = document.createElement('td');
-    totalCell.innerText = totalSum;
+    const totalCell=document.createElement('td');
+    totalCell.innerText=totalSum;
     row.appendChild(totalCell);
 
     tbody.appendChild(row);
   }
 
-  document.querySelectorAll('.show-lineup').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      const teamId = e.target.dataset.teamId;
-      const tour = e.target.dataset.tour;
-      await showRoster(teamId, tour);
+  document.querySelectorAll('.show-lineup').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      const teamId=e.target.dataset.teamId;
+      const tour=e.target.dataset.tour;
+      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour=="Финалы"?99:parseInt(tour));
     });
   });
 }
 
-async function showRoster(teamId, tourNumber) {
-  const { data: teamPlayers, error } = await supabase.from('team_players')
-    .select(`player_id(first_name,last_name,position,country,photo_url,stats), role_id(formula)`)
+async function showRoster(teamId, currentTour=1){
+  const { data: teamPlayers } = await supabase
+    .from('team_players')
+    .select('player_id, role_id (formula)')
     .eq('team_id', teamId);
 
-  if (error) return console.error('Ошибка showRoster:', error);
+  if(!teamPlayers) return;
+
+  const playerIds = teamPlayers.map(p=>p.player_id);
+
+  const { data: statsData } = await supabase
+    .from('player_stats')
+    .select('*')
+    .in('player_id', playerIds)
+    .eq('tour', currentTour);
+
+  const statsMap = {};
+  (statsData||[]).forEach(s=>statsMap[s.player_id]=s);
+
+  const { data: playersData } = await supabase
+    .from('players')
+    .select('*')
+    .in('id', playerIds);
+
+  const playersMap = {};
+  (playersData||[]).forEach(p=>playersMap[p.id]=p);
 
   const panel = document.getElementById('roster-panel');
   const list = document.getElementById('roster-list');
-  list.innerHTML = '';
+  list.innerHTML='';
 
-  for (const p of teamPlayers) {
-    const player = p.player_id;
-    const stats = (player.stats && player.stats[tourNumber]) || {};
-    const formula = p.role_id?.formula || '';
-    const context = {
-      points: stats.points || 0,
-      assists: stats.assists || 0,
-      rebounds: stats.rebounds || 0,
-      steals: stats.steals || 0,
-      blocks: stats.blocks || 0,
-      turnover: stats.turnover || 0,
-      threes: stats.threes || 0,
-      count: stats.count || 1
-    };
+  teamPlayers.forEach(p=>{
+    const stats=statsMap[p.player_id]||{};
+    const formula=p.role_id?.formula;
+    const player=playersMap[p.player_id];
+    if(!player) return;
 
-    let playerPoints = 0;
-    try {
-      const fn = new Function(...Object.keys(context), `return (${formula});`);
-      playerPoints = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-    } catch(e) { console.error('Ошибка формулы игрока:', e); }
+    let points=0;
+    if(formula){
+      const context = {
+        points: stats.points||0,
+        assists: stats.assists||0,
+        rebounds: stats.rebounds||0,
+        steals: stats.steals||0,
+        blocks: stats.blocks||0,
+        turnover: stats.turnover||0,
+        threes: stats.threes||0,
+        count: stats.count||1
+      };
+      try{
+        const fn=new Function(...Object.keys(context),`return (${formula});`);
+        points=isNaN(fn(...Object.values(context)))?0:fn(...Object.values(context));
+      }catch(e){console.error('Ошибка расчёта очков игрока',player.first_name,player.last_name,e);}
+    }
 
-    const card = document.createElement('div');
-    card.className = 'roster-card';
-    card.innerHTML = `
-      <img src="${player.photo_url || 'image/ball.svg'}" alt="">
+    const card=document.createElement('div');
+    card.className='roster-card';
+    card.innerHTML=`
+      <img src="${player.photo_url||'image/ball.svg'}" alt="">
       <div class="name">${player.first_name} ${player.last_name}</div>
-      <div class="stats">Очки: ${playerPoints}</div>
-      <div class="position">${player.position || ''}</div>
-      <div class="club">${player.country || ''}</div>
+      <div class="points">Очки: ${Math.round(points)}</div>
+      <div class="club">${player.country}</div>
+      <div class="position">${player.position}</div>
     `;
     list.appendChild(card);
-  }
+  });
 
   panel.classList.remove('hidden');
 }
 
-(async () => {
-  await getCurrentUser();
-  await loadLeaderboard();
-})();
+(async()=>{ await getCurrentUser(); await loadLeaderboard(); })();
 </script>
 </body>
 </html>
