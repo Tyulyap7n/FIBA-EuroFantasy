@@ -219,11 +219,11 @@ async function loadLeaderboard() {
     leaderboardBody.appendChild(row);
   }
 
-  // Кнопки "Состав"
+// Кнопки "Состав"
   document.querySelectorAll('.show-lineup').forEach(btn => {
     btn.addEventListener('click', async e => {
       const teamId = e.target.dataset.teamId;
-      await showLineup(teamId);
+      await showRoster(teamId); // ← исправил
     });
   });
 }
@@ -278,6 +278,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
