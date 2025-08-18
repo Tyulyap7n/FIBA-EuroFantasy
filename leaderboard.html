@@ -180,9 +180,11 @@
   color: var(--yellow); /* Цвет жёлтый, выделяем */
   margin-bottom: 0.3rem; /* Отступ снизу */
 }
-  .header img.logo { height: 50px; display:block; }
-
-  
+a img {
+  height: 50px;
+  width: auto;
+  display: block; /* чтобы убрать возможные отступы под изображением */
+}  
 </style>
 
 </head>
@@ -389,6 +391,7 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
 
 
