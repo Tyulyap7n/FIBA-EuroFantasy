@@ -149,43 +149,84 @@ let currentUser = null;
     currentUser = user;
   }
 
-  // === 3. Загрузка таблицы лидерборда ===
-  // === 3. Загрузка таблицы лидерборда ===
-async function loadLeaderboard() {
+async function calculateTeamPoints(teamId) {
   const { data, error } = await supabase
+    .from('team_players')
+    .select(`
+      player_id (stats),
+      role_id (formula)
+    `)
+    .eq('team_id', teamId);
+
+  if (error) {
+    console.error('Ошибка при подсчёте очков:', error);
+    return 0;
+  }
+
+  let total = 0;
+
+  data.forEach(p => {
+    const stats = p.player_id?.stats || {};
+    const formula = p.role_id?.formula;
+
+    if (!formula) return;
+
+    const context = {
+      PTS: stats.PTS || 0,
+      AST: stats.AST || 0,
+      REB: stats.REB || 0,
+      STL: stats.STL || 0,
+      BLK: stats.BLK || 0,
+      TO:  stats.TO  || 0,
+      count: stats.count || 1
+    };
+
+    try {
+      const fn = new Function(...Object.keys(context), `return (${formula});`);
+      const result = fn(...Object.values(context));
+      total += result;
+    } catch (e) {
+      console.error('Ошибка в формуле роли:', formula, e);
+    }
+  });
+
+  return Math.round(total);
+}
+
+async function loadLeaderboard() {
+  const { data: teams, error } = await supabase
     .from('user_teams')
-    .select('id, team_name');
+    .select('id, team_name, user_id');
 
   if (error) {
     console.error('Ошибка загрузки команд:', error);
     return;
   }
 
-  const tbody = document.getElementById('leaderboard-body');
-  tbody.innerHTML = '';
+  const leaderboardBody = document.getElementById('leaderboard-body');
+  leaderboardBody.innerHTML = '';
 
-  data.forEach((team, index) => {
-    const tr = document.createElement('tr');
-    if (team.id === currentUser?.id) {
-      tr.classList.add('me');
-    }
-    tr.innerHTML = `
-      <td>${index + 1}</td>
+  for (const team of teams) {
+    const totalPoints = await calculateTeamPoints(team.id);
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
       <td>${team.team_name}</td>
-      <td>0</td>
-      <td><button class="show-roster-btn" data-id="${team.id}">Показать</button></td>
+      <td>${totalPoints}</td>
+      <td><button class="show-lineup" data-team-id="${team.id}">Состав</button></td>
     `;
-    tbody.appendChild(tr);
-  });
+    leaderboardBody.appendChild(row);
+  }
 
-  // === ВАЖНО: навешиваем события после отрисовки строк ===
-  document.querySelectorAll('.show-roster-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const teamId = btn.dataset.id;
-      showRoster(teamId);
+  // Кнопки "Состав"
+  document.querySelectorAll('.show-lineup').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const teamId = e.target.dataset.teamId;
+      await showLineup(teamId);
     });
   });
 }
+
 
 
   // === 4. Показ состава команды ===
@@ -236,6 +277,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
