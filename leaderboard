@@ -247,189 +247,155 @@ const supabase = window.supabase.createClient(
 
 const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
 
-let currentUser = null;
-
-async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  currentUser = user;
-}
-
 async function calculateTeamPoints(teamId, currentTour = 1) {
-  const { data: teamPlayers, error: tpError } = await supabase
-    .from('team_players')
-    .select('player_id, role_id (formula)')
-    .eq('team_id', teamId);
-  if (tpError) return 0;
+  try {
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (formula)')
+      .eq('team_id', teamId);
+    if (!teamPlayers || teamPlayers.length === 0) return 0;
 
-  if (!teamPlayers || teamPlayers.length === 0) return 0;
+    const playerIds = teamPlayers.map(p => p.player_id);
+    const { data: statsData } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', currentTour);
 
-  const playerIds = teamPlayers.map(p => p.player_id);
+    const statsMap = {};
+    (statsData||[]).forEach(s => statsMap[s.player_id]=s);
 
-  const { data: statsData } = await supabase
-    .from('player_stats')
-    .select('*')
-    .in('player_id', playerIds)
-    .eq('tour', currentTour);
+    let total=0;
+    teamPlayers.forEach(p=>{
+      const stats=statsMap[p.player_id]||{};
+      const formula=p.role_id?.formula;
+      if (!formula) return;
 
-  const statsMap = {};
-  (statsData||[]).forEach(s => statsMap[s.player_id]=s);
-
-  let total=0;
-  teamPlayers.forEach(p=>{
-    const stats=statsMap[p.player_id]||{};
-    const formula=p.role_id?.formula;
-    if (!formula) return;
-
-    const context = {
-      points: stats.points||0,
-      assists: stats.assists||0,
-      rebounds: stats.rebounds||0,
-      steals: stats.steals||0,
-      blocks: stats.blocks||0,
-      turnover: stats.turnover||0,
-      threes: stats.threes||0,
-      count: stats.count||1
-    };
-    try{
-      const fn=new Function(...Object.keys(context),`return (${formula});`);
-      total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-    }catch(e){console.error('Ошибка расчёта формулы:',formula,e);}
-  });
-  return Math.round(total);
+      const context = { ...stats, count: stats.count||1 };
+      try{
+        const fn=new Function(...Object.keys(context),`return (${formula});`);
+        total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+      }catch(e){console.error('Ошибка формулы:', formula, e);}
+    });
+    return Math.round(total);
+  } catch(e) {
+    console.error('Ошибка calculateTeamPoints:', e);
+    return 0;
+  }
 }
-const { data: existingScore, error } = await supabase
-  .from("scores")
-  .select("id,total_points")
-  .eq("team_id", teamId)
-  .eq("tour_id", currentTourId)
-  .maybeSingle();
 
 async function loadLeaderboard() {
-  const { data: teams } = await supabase.from('user_teams').select('id, team_name');
-  const tbody = document.getElementById('leaderboard-body');
-  tbody.innerHTML='';
+  try {
+    const { data: teams } = await supabase.from('user_teams').select('id, team_name');
+    const tbody = document.getElementById('leaderboard-body');
+    tbody.innerHTML = '';
 
-  for(const team of teams){
-    const row=document.createElement('tr');
-    let totalSum=0;
-    row.innerHTML=`<td>${team.team_name}</td>`;
+    for(const team of teams){
+      const row = document.createElement('tr');
+      let totalSum = 0;
+      row.innerHTML = `<td>${team.team_name}</td>`;
 
-    for(const tour of TOURS){
-      const tourNumbers = tour.includes("-") ? tour.split("-").map(Number) : [tour=="Финалы"?99:Number(tour)];
-      let points=0;
-      for(const t of tourNumbers) points += await calculateTeamPoints(team.id, t);
-      totalSum += points;
+      for(const tour of TOURS){
+        const tourNumbers = tour.includes("-") ? tour.split("-").map(Number) : [tour=="Финалы"?99:Number(tour)];
+        let points = 0;
+        for(const t of tourNumbers) points += await calculateTeamPoints(team.id, t);
+        totalSum += points;
 
-      const cell=document.createElement('td');
-      cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">Состав</button>`;
-      row.appendChild(cell);
+        const cell = document.createElement('td');
+        cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">Состав</button>`;
+        row.appendChild(cell);
+      }
+
+      const totalCell = document.createElement('td');
+      totalCell.innerText = totalSum;
+      row.appendChild(totalCell);
+
+      tbody.appendChild(row);
     }
 
-    const totalCell=document.createElement('td');
-    totalCell.innerText=totalSum;
-    row.appendChild(totalCell);
-
-    tbody.appendChild(row);
-  }
-
-  document.querySelectorAll('.show-lineup').forEach(btn=>{
-    btn.addEventListener('click', async e=>{
-      const teamId=e.target.dataset.teamId;
-      const tour=e.target.dataset.tour;
-      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour=="Финалы"?99:parseInt(tour));
+    document.querySelectorAll('.show-lineup').forEach(btn=>{
+      btn.addEventListener('click', async e=>{
+        const teamId=e.target.dataset.teamId;
+        const tour=e.target.dataset.tour;
+        await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour=="Финалы"?99:parseInt(tour));
+      });
     });
-  });
+  } catch(e) {
+    console.error('Ошибка loadLeaderboard:', e);
+  }
 }
 
 async function showRoster(teamId, currentTour=1){
-  const { data: teamPlayers } = await supabase
-    .from('team_players')
-    .select('player_id, role_id (formula)')
-    .eq('team_id', teamId);
+  try {
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (formula)')
+      .eq('team_id', teamId);
+    if(!teamPlayers) return;
 
-  if(!teamPlayers) return;
+    const playerIds = teamPlayers.map(p=>p.player_id);
 
-  const playerIds = teamPlayers.map(p=>p.player_id);
+    const { data: statsData } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', currentTour);
 
-  const { data: statsData } = await supabase
-    .from('player_stats')
-    .select('*')
-    .in('player_id', playerIds)
-    .eq('tour', currentTour);
+    const statsMap = {};
+    (statsData||[]).forEach(s=>statsMap[s.player_id]=s);
 
-  const statsMap = {};
-  (statsData||[]).forEach(s=>statsMap[s.player_id]=s);
+    const { data: playersData } = await supabase
+      .from('players')
+      .select('*')
+      .in('id', playerIds);
 
-  const { data: playersData } = await supabase
-    .from('players')
-    .select('*')
-    .in('id', playerIds);
+    const playersMap = {};
+    (playersData||[]).forEach(p=>playersMap[p.id]=p);
 
-  const playersMap = {};
-  (playersData||[]).forEach(p=>playersMap[p.id]=p);
+    const panel = document.getElementById('roster-panel');
+    const list = document.getElementById('roster-list');
+    list.innerHTML='';
 
-  const panel = document.getElementById('roster-panel');
-  const list = document.getElementById('roster-list');
-  list.innerHTML='';
+    teamPlayers.forEach(p=>{
+      const stats=statsMap[p.player_id]||{};
+      const formula=p.role_id?.formula;
+      const player=playersMap[p.player_id];
+      if(!player) return;
 
-  teamPlayers.forEach(p=>{
-    const stats=statsMap[p.player_id]||{};
-    const formula=p.role_id?.formula;
-    const player=playersMap[p.player_id];
-    if(!player) return;
+      let points=0;
+      if(formula){
+        const context = { ...stats, count: stats.count||1 };
+        try{
+          const fn=new Function(...Object.keys(context),`return (${formula});`);
+          points=isNaN(fn(...Object.values(context)))?0:fn(...Object.values(context));
+        }catch(e){console.error('Ошибка расчёта очков игрока',player.first_name,player.last_name,e);}
+      }
 
-    let points=0;
-    if(formula){
-      const context = {
-        points: stats.points||0,
-        assists: stats.assists||0,
-        rebounds: stats.rebounds||0,
-        steals: stats.steals||0,
-        blocks: stats.blocks||0,
-        turnover: stats.turnover||0,
-        threes: stats.threes||0,
-        count: stats.count||1
-      };
-      try{
-        const fn=new Function(...Object.keys(context),`return (${formula});`);
-        points=isNaN(fn(...Object.values(context)))?0:fn(...Object.values(context));
-      }catch(e){console.error('Ошибка расчёта очков игрока',player.first_name,player.last_name,e);}
-    }
+      const card=document.createElement('div');
+      card.className='roster-card';
+      card.innerHTML=`
+        <img src="${player.photo_url||'image/ball.svg'}" alt="">
+        <div class="name">${player.first_name} ${player.last_name}</div>
+        <div class="points">Очки: ${Math.round(points)}</div>
+        <div class="club">${player.country}</div>
+        <div class="position">${player.position}</div>
+      `;
+      list.appendChild(card);
+    });
 
-    const card=document.createElement('div');
-    card.className='roster-card';
-    card.innerHTML=`
-      <img src="${player.photo_url||'image/ball.svg'}" alt="">
-      <div class="name">${player.first_name} ${player.last_name}</div>
-      <div class="points">Очки: ${Math.round(points)}</div>
-      <div class="club">${player.country}</div>
-      <div class="position">${player.position}</div>
-    `;
-    list.appendChild(card);
-  });
-
-  panel.classList.remove('hidden');
+    panel.classList.remove('hidden');
+  } catch(e) {
+    console.error('Ошибка showRoster:', e);
+  }
 }
-async function renderLeaderboard() {
-  const scores = await loadScoresForCurrentTour();
-  const leaderboardEl = document.getElementById("leaderboard");
-  leaderboardEl.innerHTML = "";
 
-  scores.forEach((s, idx) => {
-    const row = document.createElement("div");
-    row.className = "leaderboard-row";
-    row.textContent = `${idx + 1}. Team ${s.team_id}: ${s.total_points} pts`;
-    leaderboardEl.appendChild(row);
-  });
-}
 document.addEventListener("DOMContentLoaded", async () => {
-  await renderLeaderboard();
+  await loadLeaderboard();
 });
-
-(async()=>{ await getCurrentUser(); await loadLeaderboard(); })();
 </script>
 </body>
 </html>
+
 
 
 
