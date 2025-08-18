@@ -152,7 +152,7 @@ async function loadLeaderboard() {
     return;
   }
 
-  const tbody = document.querySelector('#leaderboard tbody');
+  const tbody = document.getElementById('leaderboard-body');
   tbody.innerHTML = '';
 
   data.forEach((team, index) => {
@@ -205,5 +205,6 @@ async function loadLeaderboard() {
 </script>
 </body>
 </html>
+
 
 
