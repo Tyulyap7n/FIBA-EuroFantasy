@@ -7,12 +7,65 @@
   /* === LEADERBOARD PAGE === */
   .leaderboard-page { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
   .leaderboard-page h1 { font-family: 'Petrov Sans', sans-serif; font-size: 2.2rem; margin-bottom: 1rem; text-align:center; color:var(--yellow); }
-  .leaderboard-table { width:100%; border-collapse:collapse; background:#2a2a2a; border-radius:16px; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,0.5);}
-  .leaderboard-table th, .leaderboard-table td { padding:0.8rem 1rem; text-align:left; font-size:0.95rem; color:#fff;}
-  .leaderboard-table th { font-weight:bold; text-transform:uppercase; background:purple;}
-  .leaderboard-table tr:nth-child(even){background:#222;}
-  .leaderboard-table tr:hover{background:rgba(254,100,28,0.15);transition:0.2s;}
-  .leaderboard-table tr.me{background:rgba(253,230,0,0.25); font-weight:bold;}
+/* === LEADERBOARD TABLE === */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background: transparent;
+}
+
+.leaderboard-table th, .leaderboard-table td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid var(--white);
+  vertical-align: middle;
+}
+
+.leaderboard-table th {
+  background: rgba(255,255,255,0.04);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.leaderboard-table tbody tr {
+  background: var(--purple);
+  transition: background .18s, color .18s;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: var(--orange);
+  color: var(--black);
+}
+
+.leaderboard-table tbody td img {
+  width: 48px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.leaderboard-table .show-lineup {
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  background: var(--yellow);
+  color: var(--black);
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease;
+}
+
+.leaderboard-table .show-lineup:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* Дополнительно выделяем итоговую колонку */
+.leaderboard-table td:last-child {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
 
   .roster-panel { margin-top:2rem; background:#2a2a2a; border-radius:16px; padding:1.5rem; max-height:500px; overflow-y:auto; box-shadow:0 0 15px rgba(0,0,0,0.4);}
   .roster-panel h2 { color:orange; font-size:1.6rem; margin-bottom:1rem; }
@@ -222,3 +275,4 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
