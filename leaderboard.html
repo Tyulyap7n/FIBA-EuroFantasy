@@ -44,6 +44,24 @@
 .header-links { display:flex; gap:20px; align-items:center; }
 .header-link { color: var(--white); text-decoration: none; font-weight: 700; }
 .header-link:hover { color: var(--yellow); }
+/* Черный цвет текста в ячейке */
+.cell-class {
+  color: black;
+}
+
+.show-lineup {
+  background-color: var(--yellow);
+  color: black; /* Текст кнопки */
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.show-lineup:hover {
+  opacity: 0.9;
+}
 
 /* Alternative/custom header usage */
 .custom-header {
@@ -391,6 +409,7 @@ async function showRoster(teamId, currentTour=1){
 </script>
 </body>
 </html>
+
 
 
 
