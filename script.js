@@ -630,9 +630,9 @@ if (error || !user) {
 try {
   // Получаем ник пользователя из таблицы profiles
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
+    .from("user_teams")
+    .select("team_name")
+    .eq("user_id", user.id)
     .single();
 
   if (profileError) throw profileError;
@@ -704,4 +704,5 @@ try {
     });
   });
 });
+
 
