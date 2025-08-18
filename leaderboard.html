@@ -159,19 +159,31 @@ async function calculateTeamPoints(teamId) {
     .eq('team_id', teamId);
 
   if (error) {
-    console.error('Ошибка при подсчёте очков:', error);
+    console.error('Ошибка при запросе team_players:', error);
+    return 0;
+  }
+
+  if (!data || data.length === 0) {
+    console.warn(`Команда ${teamId} не содержит игроков`);
     return 0;
   }
 
   let total = 0;
 
-  data.forEach(p => {
+  data.forEach((p, index) => {
     const stats = p.player?.stats || {};
     const formula = p.role?.formula;
 
-    if (!formula) return;
+    console.group(`Игрок #${index + 1}`);
+    console.log('Stats:', stats);
+    console.log('Formula:', formula);
 
-    // контекст с дефолтными значениями
+    if (!formula) {
+      console.warn('Формула роли не задана, пропускаем игрока');
+      console.groupEnd();
+      return;
+    }
+
     const context = {
       points: stats.points || 0,
       assists: stats.assists || 0,
@@ -183,18 +195,24 @@ async function calculateTeamPoints(teamId) {
       count: stats.count || 1
     };
 
+    console.log('Context для формулы:', context);
+
     try {
-      // безопасное вычисление формулы
       const fn = new Function(...Object.keys(context), `return (${formula});`);
       const result = fn(...Object.values(context));
+      console.log('Результат формулы:', result);
       total += isNaN(result) ? 0 : result;
     } catch (e) {
-      console.error('Ошибка в формуле роли:', formula, e);
+      console.error('Ошибка при вычислении формулы:', formula, e);
     }
+
+    console.groupEnd();
   });
 
+  console.log(`Total очки команды ${teamId}:`, total);
   return Math.round(total);
 }
+
 
 
 async function loadLeaderboard() {
@@ -281,6 +299,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
