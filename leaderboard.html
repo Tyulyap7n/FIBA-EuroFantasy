@@ -98,102 +98,106 @@
       const { data: { user } } = await supabase.auth.getUser();
       currentUser = user;
     }
-async function getPlayerStats(playerIds, tour = 1) {
-  const { data, error } = await supabase
-    .from('player_stats')
-    .select('*')
-    .in('player_id', playerIds)
-    .eq('tour', tour);
-
-  if (error) {
-    console.error('Ошибка при запросе player_stats:', error);
-    return [];
+  async function getPlayerStats(playerIds, tour = 1) {
+    const { data, error } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', tour);
+  
+    if (error) {
+      console.error('Ошибка при запросе player_stats:', error);
+      return [];
+    }
+  
+    // Возвращаем stats по player_id
+    const statsMap = {};
+    data.forEach(s => {
+      statsMap[s.player_id] = s;
+    });
+    return statsMap;
   }
-
-  // Возвращаем stats по player_id
-  const statsMap = {};
-  data.forEach(s => {
-    statsMap[s.player_id] = s;
-  });
-  return statsMap;
-}
-
-async function calculateTeamPoints(teamId, tour = 1) {
-  const { data, error } = await supabase
-    .from('team_players')
-    .select(`
-      player:player_id (
-        first_name,
-        last_name
-      ),
-      role:role_id (formula),
-      stats:player_id!player_stats (
-        points,
-        threes,
-        assists,
-        rebounds,
-        steals,
-        blocks,
-        turnover
-      )
-    `)
-    .eq('team_id', teamId)
-    .eq('stats.tour', tour);
-
-  if (error) {
-    console.error('Ошибка при запросе team_players:', error);
-    return 0;
-  }
-
-  if (!data || data.length === 0) {
-    console.warn(`Команда ${teamId} не содержит игроков`);
-    return 0;
-  }
-
-  let total = 0;
-
-  data.forEach((p, index) => {
-    const stats = p.stats || {};
-    const formula = p.role?.formula;
-
-    console.group(`Игрок #${index + 1}`);
-    console.log('Stats:', stats);
-    console.log('Formula:', formula);
-
-    if (!formula) {
-      console.warn('Формула роли не задана, пропускаем игрока');
+  
+  async function calculateTeamPoints(teamId, currentTour = 1) {
+    // 1. Получаем игроков команды вместе с их ролью
+    const { data: teamPlayers, error: tpError } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (formula)')
+      .eq('team_id', teamId);
+  
+    if (tpError) {
+      console.error('Ошибка при запросе team_players:', tpError);
+      return 0;
+    }
+  
+    if (!teamPlayers || teamPlayers.length === 0) {
+      console.warn(`Команда ${teamId} не содержит игроков`);
+      return 0;
+    }
+  
+    const playerIds = teamPlayers.map(p => p.player_id);
+  
+    // 2. Получаем статистику игроков из player_stats
+    const { data: statsData, error: statsError } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', currentTour);
+  
+    if (statsError) {
+      console.error('Ошибка при запросе player_stats:', statsError);
+      return 0;
+    }
+  
+    // 3. Создаём карту player_id → stats
+    const statsMap = {};
+    statsData.forEach(s => statsMap[s.player_id] = s);
+  
+    let total = 0;
+  
+    // 4. Вычисляем очки каждого игрока по формуле роли
+    teamPlayers.forEach((p, index) => {
+      const stats = statsMap[p.player_id] || {};
+      const formula = p.role_id?.formula;
+  
+      console.group(`Игрок #${index + 1}`);
+      console.log('Stats:', stats);
+      console.log('Formula:', formula);
+  
+      if (!formula) {
+        console.warn('Формула роли не задана, пропускаем игрока');
+        console.groupEnd();
+        return;
+      }
+  
+      const context = {
+        points: stats.points || 0,
+        assists: stats.assists || 0,
+        rebounds: stats.rebounds || 0,
+        steals: stats.steals || 0,
+        blocks: stats.blocks || 0,
+        turnover: stats.turnover || 0,
+        threes: stats.threes || 0,
+        count: stats.count || 1
+      };
+  
+      console.log('Context для формулы:', context);
+  
+      try {
+        const fn = new Function(...Object.keys(context), `return (${formula});`);
+        const result = fn(...Object.values(context));
+        console.log('Результат формулы:', result);
+        total += isNaN(result) ? 0 : result;
+      } catch (e) {
+        console.error('Ошибка при вычислении формулы:', formula, e);
+      }
+  
       console.groupEnd();
-      return;
-    }
-
-    const context = {
-      points: stats.points || 0,
-      assists: stats.assists || 0,
-      rebounds: stats.rebounds || 0,
-      steals: stats.steals || 0,
-      blocks: stats.blocks || 0,
-      turnover: stats.turnover || 0,
-      threes: stats.threes || 0,
-      count: 1
-    };
-
-    console.log('Context для формулы:', context);
-
-    try {
-      const fn = new Function(...Object.keys(context), `return (${formula});`);
-      const result = fn(...Object.values(context));
-      console.log('Результат формулы:', result);
-      total += isNaN(result) ? 0 : result;
-    } catch (e) {
-      console.error('Ошибка при вычислении формулы:', formula, e);
-    }
-
-    console.groupEnd();
-  });
-
-  console.log(`Total очки команды ${teamId}:`, total);
-  return Math.round(total);
-}
+    });
+  
+    console.log(`Total очки команды ${teamId}:`, total);
+    return Math.round(total);
+  }
 
 
     async function loadLeaderboard() {
@@ -257,5 +261,6 @@ async function calculateTeamPoints(teamId, tour = 1) {
   </script>
 </body>
 </html>
+
 
 
