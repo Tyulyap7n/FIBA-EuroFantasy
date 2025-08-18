@@ -88,13 +88,6 @@ async function loadCurrentUserAndTeam() {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
     currentUser = session?.user ?? null;
-
-    if (!currentUser) {
-      // пользователь не залогинен — редирект на index
-      window.location.href = "index.html";
-      return;
-    }
-
     // ищем запись в user_teams по user_id (создаём, если нет — но в auth.js уже пытались создать)
     const { data: teamData, error: teamError } = await supabase
       .from("user_teams")
@@ -711,3 +704,4 @@ try {
     });
   });
 });
+
