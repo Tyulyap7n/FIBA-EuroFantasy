@@ -422,11 +422,15 @@ async function renderLeaderboard() {
     leaderboardEl.appendChild(row);
   });
 }
+document.addEventListener("DOMContentLoaded", async () => {
+  await renderLeaderboard();
+});
 
 (async()=>{ await getCurrentUser(); await loadLeaderboard(); })();
 </script>
 </body>
 </html>
+
 
 
 
