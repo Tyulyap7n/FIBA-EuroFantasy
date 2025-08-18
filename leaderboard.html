@@ -98,6 +98,25 @@
       const { data: { user } } = await supabase.auth.getUser();
       currentUser = user;
     }
+async function getPlayerStats(playerIds, tour = 1) {
+  const { data, error } = await supabase
+    .from('player_stats')
+    .select('*')
+    .in('player_id', playerIds)
+    .eq('tour', tour);
+
+  if (error) {
+    console.error('Ошибка при запросе player_stats:', error);
+    return [];
+  }
+
+  // Возвращаем stats по player_id
+  const statsMap = {};
+  data.forEach(s => {
+    statsMap[s.player_id] = s;
+  });
+  return statsMap;
+}
 
 async function calculateTeamPoints(teamId, tour = 1) {
   const { data, error } = await supabase
@@ -238,4 +257,5 @@ async function calculateTeamPoints(teamId, tour = 1) {
   </script>
 </body>
 </html>
+
 
