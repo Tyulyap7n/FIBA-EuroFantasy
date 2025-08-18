@@ -11,7 +11,6 @@
       margin: 0 auto;
       padding: 2rem 1rem;
     }
-
     .leaderboard-page h1 {
       font-family: 'Petrov Sans', sans-serif;
       font-size: 2.2rem;
@@ -20,7 +19,6 @@
       color: var(--yellow);
       letter-spacing: 1px;
     }
-
     .leaderboard-table {
       width: 100%;
       border-collapse: collapse;
@@ -32,30 +30,16 @@
     .leaderboard-table thead {
       background: var(--purple);
     }
-    .leaderboard-table th {
+    .leaderboard-table th, .leaderboard-table td {
       padding: 0.8rem 1rem;
       text-align: left;
-      font-weight: bold;
-      font-size: 1rem;
-      color: var(--white);
-      text-transform: uppercase;
-    }
-    .leaderboard-table td {
-      padding: 0.8rem 1rem;
-      border-bottom: 1px solid #444;
       font-size: 0.95rem;
+      color: var(--white);
     }
-    .leaderboard-table tr:nth-child(even) {
-      background: #222;
-    }
-    .leaderboard-table tr:hover {
-      background: rgba(254,100,28,0.15);
-      transition: background 0.2s ease-in-out;
-    }
-    .leaderboard-table tr.me {
-      background: rgba(253,230,0,0.25);
-      font-weight: bold;
-    }
+    .leaderboard-table th { font-weight: bold; text-transform: uppercase; }
+    .leaderboard-table tr:nth-child(even) { background: #222; }
+    .leaderboard-table tr:hover { background: rgba(254,100,28,0.15); transition: 0.2s; }
+    .leaderboard-table tr.me { background: rgba(253,230,0,0.25); font-weight: bold; }
 
     .roster-panel {
       margin-top: 2rem;
@@ -66,17 +50,8 @@
       overflow-y: auto;
       box-shadow: 0 0 15px rgba(0,0,0,0.4);
     }
-    .roster-panel h2 {
-      color: var(--orange);
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-    }
-
-    .roster-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 1rem;
-    }
+    .roster-panel h2 { color: var(--orange); font-size: 1.6rem; margin-bottom: 1rem; }
+    .roster-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
     .roster-card {
       background: #1c1c1c;
       border-radius: 12px;
@@ -84,29 +59,14 @@
       text-align: center;
       box-shadow: 0 0 8px rgba(0,0,0,0.4);
     }
-    .roster-card img {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 0.5rem;
-    }
-    .roster-card .name {
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-bottom: 0.3rem;
-    }
-    .roster-card .club {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .roster-card img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem; }
+    .roster-card .name { font-size: 0.9rem; font-weight: bold; margin-bottom: 0.3rem; }
+    .roster-card .club { font-size: 0.8rem; color: var(--muted); }
   </style>
 </head>
 <body>
   <div class="leaderboard-page">
     <h1>Турнирная таблица</h1>
-
-    <!-- Таблица лидерборда -->
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -116,200 +76,137 @@
           <th>Состав</th>
         </tr>
       </thead>
-      <tbody id="leaderboard-body">
-        <!-- Заполняется JS -->
-      </tbody>
+      <tbody id="leaderboard-body"></tbody>
     </table>
 
-    <!-- Панель состава -->
     <div class="roster-panel hidden" id="roster-panel">
       <h2>Состав команды</h2>
-      <div class="roster-list" id="roster-list">
-        <!-- Игроки выводятся динамически -->
-      </div>
+      <div class="roster-list" id="roster-list"></div>
     </div>
   </div>
 
-  <!-- Supabase CDN -->
-<!-- Supabase CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    const supabase = window.supabase.createClient(
+      "https://xovxokupvsnnjtskdgvr.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
+    );
 
-<script type="module">
-  // === 1. Инициализация клиента ===
-  const supabase = window.supabase.createClient(
-    "https://xovxokupvsnnjtskdgvr.supabase.co", // вставь свой URL
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E" // вставь свой anon key
-  );
+    let currentUser = null;
 
-let currentUser = null;
-
-  // === 2. Получаем авторизованного пользователя ===
-  async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUser = user;
-  }
-
-async function calculateTeamPoints(teamId) {
-  const { data, error } = await supabase
-    .from('team_players')
-    .select(`
-      player:player_id (stats),
-      role:role_id (formula)
-    `)
-    .eq('team_id', teamId);
-
-  if (error) {
-    console.error('Ошибка при запросе team_players:', error);
-    return 0;
-  }
-
-  if (!data || data.length === 0) {
-    console.warn(`Команда ${teamId} не содержит игроков`);
-    return 0;
-  }
-
-  let total = 0;
-
-  data.forEach((p, index) => {
-    const stats = p.player?.stats || {};
-    const formula = p.role?.formula;
-
-    console.group(`Игрок #${index + 1}`);
-    console.log('Stats:', stats);
-    console.log('Formula:', formula);
-
-    if (!formula) {
-      console.warn('Формула роли не задана, пропускаем игрока');
-      console.groupEnd();
-      return;
+    async function getCurrentUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user;
     }
 
-  const context = {
-    points: stats.points || stats.PTS || stats.pts || 0,
-    assists: stats.assists || stats.AST || 0,
-    rebounds: stats.rebounds || stats.REB || 0,
-    steals: stats.steals || stats.STL || 0,
-    blocks: stats.blocks || stats.BLK || 0,
-    turnover: stats.turnover || stats.TOV || 0,
-    threes: stats.threes || stats.THREE || 0,
-    count: stats.count || 1
-  };
+    async function calculateTeamPoints(teamId) {
+      const { data, error } = await supabase
+        .from('team_players')
+        .select(`player:player_id (stats), role:role_id (formula)`)
+        .eq('team_id', teamId);
 
+      if (error) { console.error('Ошибка при запросе team_players:', error); return 0; }
+      if (!data || data.length === 0) { console.warn(`Команда ${teamId} не содержит игроков`); return 0; }
 
-    console.log('Context для формулы:', context);
+      let total = 0;
 
-    try {
-      const fn = new Function(...Object.keys(context), `return (${formula});`);
-      const result = fn(...Object.values(context));
-      console.log('Результат формулы:', result);
-      total += isNaN(result) ? 0 : result;
-    } catch (e) {
-      console.error('Ошибка при вычислении формулы:', formula, e);
+      data.forEach((p, index) => {
+        const stats = p.player?.stats || {};
+        const formula = p.role?.formula;
+
+        console.group(`Игрок #${index + 1}`);
+        console.log('Stats:', stats);
+        console.log('Formula:', formula);
+
+        if (!formula) { console.warn('Формула роли не задана, пропускаем'); console.groupEnd(); return; }
+
+        const context = {
+          points: stats.points || stats.PTS || stats.pts || 0,
+          assists: stats.assists || stats.AST || 0,
+          rebounds: stats.rebounds || stats.REB || 0,
+          steals: stats.steals || stats.STL || 0,
+          blocks: stats.blocks || stats.BLK || 0,
+          turnover: stats.turnover || stats.TOV || 0,
+          threes: stats.threes || stats.THREE || 0,
+          count: stats.count || 1
+        };
+
+        console.log('Context для формулы:', context);
+
+        try {
+          const fn = new Function(...Object.keys(context), `return (${formula});`);
+          const result = fn(...Object.values(context));
+          console.log('Результат формулы:', result);
+          total += isNaN(result) ? 0 : result;
+        } catch (e) {
+          console.error('Ошибка при вычислении формулы:', formula, e);
+        }
+
+        console.groupEnd();
+      });
+
+      console.log(`Total очки команды ${teamId}:`, total);
+      return Math.round(total);
     }
 
-    console.groupEnd();
-  });
+    async function loadLeaderboard() {
+      const { data: teams, error } = await supabase.from('user_teams').select('id, team_name, user_id');
+      if (error) { console.error('Ошибка загрузки команд:', error); return; }
 
-  console.log(`Total очки команды ${teamId}:`, total);
-  return Math.round(total);
-}
+      const leaderboardBody = document.getElementById('leaderboard-body');
+      leaderboardBody.innerHTML = '';
 
+      for (const team of teams) {
+        const totalPoints = await calculateTeamPoints(team.id);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${team.team_name}</td>
+          <td>${totalPoints}</td>
+          <td><button class="show-lineup" data-team-id="${team.id}">Состав</button></td>
+        `;
+        leaderboardBody.appendChild(row);
+      }
 
+      document.querySelectorAll('.show-lineup').forEach(btn => {
+        btn.addEventListener('click', async e => {
+          const teamId = e.target.dataset.teamId;
+          await showRoster(teamId);
+        });
+      });
+    }
 
-async function loadLeaderboard() {
-  const { data: teams, error } = await supabase
-    .from('user_teams')
-    .select('id, team_name, user_id');
+    async function showRoster(teamId) {
+      const { data, error } = await supabase
+        .from('team_players')
+        .select(`player_id (first_name, last_name, position, country, photo_url)`)
+        .eq('team_id', teamId);
 
-  if (error) {
-    console.error('Ошибка загрузки команд:', error);
-    return;
-  }
+      if (error) { console.error('Ошибка showRoster:', error); return; }
 
-  const leaderboardBody = document.getElementById('leaderboard-body');
-  leaderboardBody.innerHTML = '';
+      const panel = document.getElementById('roster-panel');
+      const list = document.getElementById('roster-list');
+      list.innerHTML = '';
 
-  for (const team of teams) {
-    const totalPoints = await calculateTeamPoints(team.id);
+      data.forEach(p => {
+        const player = p.player_id;
+        const card = document.createElement('div');
+        card.className = 'roster-card';
+        card.innerHTML = `
+          <img src="${player.photo_url || 'image/ball.svg'}" alt="">
+          <div class="name">${player.first_name} ${player.last_name}</div>
+          <div class="club">${player.country}</div>
+          <div class="position">${player.position}</div>
+        `;
+        list.appendChild(card);
+      });
 
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${team.team_name}</td>
-      <td>${totalPoints}</td>
-      <td><button class="show-lineup" data-team-id="${team.id}">Состав</button></td>
-    `;
-    leaderboardBody.appendChild(row);
-  }
+      panel.classList.remove('hidden');
+    }
 
-// Кнопки "Состав"
-  document.querySelectorAll('.show-lineup').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      const teamId = e.target.dataset.teamId;
-      await showRoster(teamId); // ← исправил
-    });
-  });
-}
-
-
-
-  // === 4. Показ состава команды ===
-async function showRoster(teamId) {
-  const { data, error } = await supabase
-    .from('team_players')
-    .select(`
-      player_id (
-        first_name,
-        last_name,
-        position,
-        country,
-        photo_url
-      )
-    `)
-    .eq('team_id', teamId);
-
-  if (error) {
-    console.error('Ошибка showRoster:', error);
-    return;
-  }
-
-  const panel = document.getElementById('roster-panel');
-  const list = document.getElementById('roster-list');
-  list.innerHTML = '';
-
-  data.forEach(p => {
-    const player = p.player_id; // вложенный объект
-    const card = document.createElement('div');
-    card.className = 'roster-card';
-    card.innerHTML = `
-      <img src="${player.photo_url || 'image/ball.svg'}" alt="">
-      <div class="name">${player.first_name} ${player.last_name}</div>
-      <div class="club">${player.country}</div>
-      <div class="position">${player.position}</div>
-    `;
-    list.appendChild(card);
-  });
-
-  panel.classList.remove('hidden');
-}
-
-  // === 5. Инициализация ===
-  (async () => {
-    await getCurrentUser();
-    await loadLeaderboard();
-  })();
-</script>
+    (async () => {
+      await getCurrentUser();
+      await loadLeaderboard();
+    })();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
