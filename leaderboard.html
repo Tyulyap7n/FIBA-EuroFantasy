@@ -184,16 +184,17 @@ async function calculateTeamPoints(teamId) {
       return;
     }
 
-    const context = {
-      points: stats.points || 0,
-      assists: stats.assists || 0,
-      rebounds: stats.rebounds || 0,
-      steals: stats.steals || 0,
-      blocks: stats.blocks || 0,
-      turnover: stats.turnover || 0,
-      threes: stats.threes || 0,
-      count: stats.count || 1
-    };
+  const context = {
+    points: stats.points || stats.PTS || stats.pts || 0,
+    assists: stats.assists || stats.AST || 0,
+    rebounds: stats.rebounds || stats.REB || 0,
+    steals: stats.steals || stats.STL || 0,
+    blocks: stats.blocks || stats.BLK || 0,
+    turnover: stats.turnover || stats.TOV || 0,
+    threes: stats.threes || stats.THREE || 0,
+    count: stats.count || 1
+  };
+
 
     console.log('Context для формулы:', context);
 
@@ -299,6 +300,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
