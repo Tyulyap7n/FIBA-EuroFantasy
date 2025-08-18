@@ -153,8 +153,8 @@ async function calculateTeamPoints(teamId) {
   const { data, error } = await supabase
     .from('team_players')
     .select(`
-      player_id (stats),
-      role_id (formula)
+      player:player_id (stats),
+      role:role_id (formula)
     `)
     .eq('team_id', teamId);
 
@@ -166,26 +166,28 @@ async function calculateTeamPoints(teamId) {
   let total = 0;
 
   data.forEach(p => {
-    const stats = p.player_id?.stats || {};
-    const formula = p.role_id?.formula;
+    const stats = p.player?.stats || {};
+    const formula = p.role?.formula;
 
     if (!formula) return;
 
+    // контекст с дефолтными значениями
     const context = {
       points: stats.points || 0,
       assists: stats.assists || 0,
       rebounds: stats.rebounds || 0,
       steals: stats.steals || 0,
       blocks: stats.blocks || 0,
-      turnover:  stats.turnover  || 0,
+      turnover: stats.turnover || 0,
       threes: stats.threes || 0,
       count: stats.count || 1
     };
 
     try {
+      // безопасное вычисление формулы
       const fn = new Function(...Object.keys(context), `return (${formula});`);
       const result = fn(...Object.values(context));
-      total += result;
+      total += isNaN(result) ? 0 : result;
     } catch (e) {
       console.error('Ошибка в формуле роли:', formula, e);
     }
@@ -193,6 +195,7 @@ async function calculateTeamPoints(teamId) {
 
   return Math.round(total);
 }
+
 
 async function loadLeaderboard() {
   const { data: teams, error } = await supabase
@@ -278,6 +281,7 @@ async function showRoster(teamId) {
 </script>
 </body>
 </html>
+
 
 
 
