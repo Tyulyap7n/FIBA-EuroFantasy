@@ -9,7 +9,6 @@
 const BUDGET_CAP = 60;
 const DEFAULT_AVATAR = ""; // путь к заглушке, если нужно
 const playersPerPage = 8;
-
 const ROLE_KEYS = [
   "Scorer",
   "Assistant",
@@ -46,7 +45,7 @@ let teamPlayers = [];     // записи team_players для текущей к�
 let currentUser = null;   // supabase user object
 let currentUserTeamId = null; // id из user_teams
 let currentPage = 1;
-
+let currentTourId = null; // глобальная переменная
 /* ========== Помощники ========== */
 function logDebug(...args) { console.debug("[script.js]", ...args); }
 
@@ -122,6 +121,24 @@ async function loadCurrentUserAndTeam() {
   } catch (err) {
     console.error("Ошибка получения текущего пользователя / команды:", err);
   }
+}
+async function loadCurrentTour() {
+  const { data: tours, error } = await supabase
+    .from("tours")
+    .select("*")
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    console.error("Ошибка загрузки туров:", error);
+    return;
+  }
+
+  // выбираем тур по текущему времени
+  const now = new Date();
+  const currentTour = tours.find(t => new Date(t.start_time) <= now && now <= new Date(t.end_time));
+  currentTourId = currentTour ? currentTour.id : null;
+
+  console.log("currentTourId:", currentTourId);
 }
 
 /* ========== Загрузка игроков и player_stats, расчёт AVG ========== */
@@ -674,6 +691,9 @@ try {
 
   // 3) загрузим игроков + статистику -> players
   await loadPlayersFromSupabase();
+// 4) загрузим состав команды (team_players) и синхронизируем selectedRoles
+  await loadCurrentTour();   // <--- добавляем здесь
+
 
   // 4) загрузим состав команды (team_players) и синхронизируем selectedRoles
   await loadTeamPlayers();
@@ -707,6 +727,7 @@ try {
     });
   });
 });
+
 
 
 
