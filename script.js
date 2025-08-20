@@ -252,12 +252,14 @@ function renderRoster() {
   ROLE_OPTIONS.forEach(opt => {
     const slot = document.getElementById(`slot-${opt.key}`);
     if (!slot) return;
+
     // пометим roleId в data
     if (opt.dbId) slot.dataset.roleId = opt.dbId;
     slot.dataset.roleKey = opt.key;
 
-    // очистим содержимое слота и отрисуем
+    // 🔑 очистим слот перед новой отрисовкой
     slot.innerHTML = "";
+
     const playerId = selectedRoles[opt.key];
 
     if (!playerId) {
@@ -285,6 +287,7 @@ function renderRoster() {
     slot.appendChild(name);
   });
 }
+
 
 /* ========== Бюджет ========== */
 function getSpentCoins(nextMap = null) {
@@ -760,6 +763,7 @@ try {
     });
   });
 });
+
 
 
 
