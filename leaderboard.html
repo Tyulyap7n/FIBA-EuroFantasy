@@ -207,12 +207,6 @@ a img {
 
 </head>
   <script src="script.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", async () => {
-    await renderLeaderboard(); 
-  });
-</script>
-
 <body>
   <header class="site-header">
   <div class="logo-container">
@@ -256,10 +250,12 @@ const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
 
 async function calculateTeamPoints(teamId, currentTour = 1) {
   try {
-    const { data: teamPlayers } = await supabase
-      .from('team_players')
-      .select('player_id, role_id (formula)')
-      .eq('team_id', teamId);
+  const { data: teamPlayers } = await supabase
+    .from('team_players')
+    .select('player_id, role_id (formula)')
+    .eq('team_id', teamId)
+    .eq('tour_id', currentTour); // 👈 вот это добавляем
+
     if (!teamPlayers || teamPlayers.length === 0) return 0;
 
     const playerIds = teamPlayers.map(p => p.player_id);
@@ -397,11 +393,13 @@ async function showRoster(teamId, currentTour=1){
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await getCurrentUser();
   await loadLeaderboard();
 });
 </script>
 </body>
 </html>
+
 
 
 
