@@ -57,17 +57,6 @@ function ensureSupabase() {
   }
   return true;
 }
-document.addEventListener("DOMContentLoaded", async () => {
-  const { data, error } = await supabase
-    .from("user_teams")
-    .select("team_name")
-    .eq("user_id", user.id)
-    .single();
-
-  if (data) {
-    document.querySelector("header h1").textContent = data.team_name;
-  }
-});
 
 /* ========== Загрузка ролей + маппинг ROLE_OPTIONS ========== */
 async function loadRolesFromDb() {
@@ -747,66 +736,53 @@ async function saveRosterToDb() {
 
 /* ========== Инициализация страницы ========== */
 document.addEventListener("DOMContentLoaded", async () => {
-	// Проверка авторизации
-const { data: { user }, error } = await supabase.auth.getUser();
-if (error || !user) {
-  window.location.href = "index.html";
-  return;
-}
-
-
-try {
-  // Получаем ник пользователя из таблицы profiles
-  const { data: profile, error: profileError } = await supabase
-    .from("user_teams")
-    .select("team_name")
-    .eq("user_id", user.id)
-    .single();
-
-  if (profileError) throw profileError;
-
-  // Получаем название команды пользователя из таблицы user_teams
-  const { data: team, error: teamError } = await supabase
-    .from("user_teams")
-    .select("team_name")
-    .eq("user_id", user.id)
-    .single();
-
-  if (teamError) throw teamError;
-
-  // Обновляем элементы на странице
-  const welcomeEl = document.getElementById("welcome-message");
-  const teamEl = document.getElementById("team-name");
-
-  if (welcomeEl && profile?.username) {
-    welcomeEl.textContent = `Привет, ${profile.username}!`;
+  // Проверка авторизации
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    window.location.href = "index.html";
+    return;
   }
 
-  if (teamEl && team?.team_name) {
-    teamEl.textContent = `Название команды: ${team.team_name}`;
+  try {
+    // Берём название команды пользователя из таблицы user_teams
+    const { data: team, error: teamError } = await supabase
+      .from("user_teams")
+      .select("team_name")
+      .eq("user_id", user.id)
+      .single();
+
+    if (teamError) throw teamError;
+
+    // Обновляем элементы на странице
+    const welcomeEl = document.getElementById("welcome-message");
+    const teamEl = document.getElementById("team-name");
+    const headerTitle = document.querySelector("header h1");
+
+    if (welcomeEl) {
+      const nickname = user.user_metadata?.username || user.email || "Игрок";
+      welcomeEl.textContent = `Привет, ${nickname}!`;
+    }
+
+    if (teamEl && team?.team_name) {
+      teamEl.textContent = `Название команды: ${team.team_name}`;
+    }
+
+    if (headerTitle && team?.team_name) {
+      headerTitle.textContent = team.team_name;
+    }
+  } catch (err) {
+    console.error("Ошибка при получении данных пользователя:", err);
   }
-} catch (err) {
-  console.error("Ошибка при получении данных пользователя:", err);
-}
 
   if (!ensureSupabase()) return;
 
-  // 1) загрузим роли из БД чтобы получить dbId ролей (нужно для assign)
+  // далее твоя инициализация: loadRolesFromDb, loadCurrentUserAndTeam и т.д.
   await loadRolesFromDb();
-
-  // 2) загрузим текущего пользователя и его команду
   await loadCurrentUserAndTeam();
-
-  // 3) загрузим игроков + статистику -> players
   await loadPlayersFromSupabase();
-// 4) загрузим состав команды (team_players) и синхронизируем selectedRoles
-  await loadCurrentTour();   // <--- добавляем здесь
-
-
-  // 4) загрузим состав команды (team_players) и синхронизируем selectedRoles
+  await loadCurrentTour();
   await loadTeamPlayers();
 
-  // 5) отрисуем UI
   populateCountryFilter();
   initTableFilters();
   initPaginationButtons();
@@ -816,7 +792,6 @@ try {
   updateBudgetDisplay();
   initParButtons();
 
-  // 6) привяжем кнопку "Сохранить состав" (если есть)
   const saveBtn = document.getElementById("save-roster");
   if (saveBtn) {
     saveBtn.addEventListener("click", async () => {
@@ -826,16 +801,15 @@ try {
     });
   }
 
-  // подсказка: привязка клика по role-slot для интерактивного замещения через UI
   document.querySelectorAll(".role-slot").forEach(slot => {
     slot.addEventListener("click", async () => {
-      // если кликнули по слоту — можно открыть выбор игрока (в будущем)
-      // Сейчас просто подсвечиваем
       slot.classList.add("active");
       setTimeout(()=>slot.classList.remove("active"), 250);
     });
   });
 });
+
+
 
 
 
