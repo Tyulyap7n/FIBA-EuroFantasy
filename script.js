@@ -287,6 +287,66 @@ function renderRoster() {
     slot.appendChild(name);
   });
 }
+async function renderTeamHistory() {
+  if (!ensureSupabase()) return;
+  if (!currentUserTeamId) return;
+
+  try {
+    // грузим все составы пользователя с привязкой к туру
+    const { data, error } = await supabase
+      .from("team_players")
+      .select("tour_id, player_id, role_id, players(name, photo)")
+      .eq("team_id", currentUserTeamId)
+      .order("tour_id", { ascending: true });
+
+    if (error) throw error;
+
+    const historyEl = document.getElementById("team-history");
+    historyEl.innerHTML = "";
+
+    // группируем по туру
+    const grouped = {};
+    data.forEach(row => {
+      if (!grouped[row.tour_id]) grouped[row.tour_id] = [];
+      grouped[row.tour_id].push(row);
+    });
+
+    // отрисовываем блоки
+    Object.keys(grouped).forEach(tourId => {
+      const block = document.createElement("div");
+      block.className = "tour-block";
+
+      const title = document.createElement("h3");
+      title.textContent = `Тур ${tourId}`;
+      block.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "players-list";
+
+      grouped[tourId].forEach(p => {
+        const playerDiv = document.createElement("div");
+        playerDiv.className = "player-card";
+
+        const img = document.createElement("img");
+        img.src = p.players?.photo || DEFAULT_AVATAR;
+        img.alt = p.players?.name || "Player";
+
+        const name = document.createElement("span");
+        name.textContent = p.players?.name || "Неизвестный";
+
+        playerDiv.appendChild(img);
+        playerDiv.appendChild(name);
+        list.appendChild(playerDiv);
+      });
+
+      block.appendChild(list);
+      historyEl.appendChild(block);
+    });
+
+  } catch (err) {
+    console.error("Ошибка загрузки истории состава:", err);
+  }
+}
 
 
 /* ========== Бюджет ========== */
@@ -740,6 +800,7 @@ try {
   initPaginationButtons();
   renderPlayersTable();
   renderRoster();
+  await renderTeamHistory();
   updateBudgetDisplay();
   initParButtons();
 
@@ -763,6 +824,7 @@ try {
     });
   });
 });
+
 
 
 
