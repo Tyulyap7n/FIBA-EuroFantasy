@@ -301,12 +301,6 @@ function updateBudgetDisplay() {
   const spentEl = document.getElementById("spent-money");
   if (spentEl) spentEl.textContent = String(getSpentCoins());
 }
-const { data: existingScore, error } = await supabase
-  .from("scores")
-  .select("id,total_points")
-  .eq("team_id", teamId)
-  .eq("tour_id", currentTourId)
-  .maybeSingle();
 
 /* ========== Пагинация и таблица игроков ========== */
 function getFilteredAndSortedPlayers() {
@@ -766,6 +760,7 @@ try {
     });
   });
 });
+
 
 
 
