@@ -457,36 +457,9 @@ async function showRoster(teamId, currentTour=1){
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
-
-  // показываем историю состава конкретной команды (например своей)
-  if (currentUserTeamId) {
-    await renderTeamHistory(currentUserTeamId);
-  }
 });
+
 
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
