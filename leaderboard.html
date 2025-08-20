@@ -357,7 +357,7 @@ async function renderTeamHistory(teamId) {
       block.className = "tour-block";
 
       const title = document.createElement("h3");
-      title.textContent = `Тур ${tourId}`;
+      title.textContent = getTourLabel(parseInt(tourId));
       block.appendChild(title);
 
       const list = document.createElement("div");
@@ -464,6 +464,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
