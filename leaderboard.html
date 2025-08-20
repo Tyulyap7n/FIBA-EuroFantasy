@@ -396,7 +396,9 @@ async function showRoster(teamId, currentTour=1){
     const { data: teamPlayers } = await supabase
       .from('team_players')
       .select('player_id, role_id (formula)')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('tour_id', currentTour); // ✅ фильтр по туру
+
     if(!teamPlayers) return;
 
     const playerIds = teamPlayers.map(p=>p.player_id);
@@ -463,3 +465,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
