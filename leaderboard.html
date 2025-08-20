@@ -327,6 +327,65 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+async function renderTeamHistory(teamId) {
+  if (!ensureSupabase()) return;
+  if (!teamId) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("team_players")
+      .select("tour_id, player_id, role_id, players(name, photo)")
+      .eq("team_id", teamId)
+      .order("tour_id", { ascending: true });
+
+    if (error) throw error;
+
+    const historyEl = document.getElementById("team-history");
+    historyEl.innerHTML = "";
+
+    // группировка по турам
+    const grouped = {};
+    data.forEach(row => {
+      if (!grouped[row.tour_id]) grouped[row.tour_id] = [];
+      grouped[row.tour_id].push(row);
+    });
+
+    // рендер по каждому туру
+    Object.keys(grouped).forEach(tourId => {
+      const block = document.createElement("div");
+      block.className = "tour-block";
+
+      const title = document.createElement("h3");
+      title.textContent = `Тур ${tourId}`;
+      block.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "players-list";
+
+      grouped[tourId].forEach(p => {
+        const playerDiv = document.createElement("div");
+        playerDiv.className = "player-card";
+
+        const img = document.createElement("img");
+        img.src = p.players?.photo || DEFAULT_AVATAR;
+        img.alt = p.players?.name || "Player";
+
+        const name = document.createElement("span");
+        name.textContent = p.players?.name || "Неизвестный";
+
+        playerDiv.appendChild(img);
+        playerDiv.appendChild(name);
+        list.appendChild(playerDiv);
+      });
+
+      block.appendChild(list);
+      historyEl.appendChild(block);
+    });
+
+  } catch (err) {
+    console.error("Ошибка загрузки истории состава:", err);
+  }
+}
 
 async function showRoster(teamId, currentTour=1){
   try {
@@ -394,10 +453,17 @@ async function showRoster(teamId, currentTour=1){
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
+
+  // показываем историю состава конкретной команды (например своей)
+  if (currentUserTeamId) {
+    await renderTeamHistory(currentUserTeamId);
+  }
 });
+
 </script>
 </body>
 </html>
+
 
 
 
