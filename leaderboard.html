@@ -329,13 +329,12 @@ async function loadLeaderboard() {
   }
 }
 async function renderTeamHistory(teamId) {
-  if (!ensureSupabase()) return;
-  if (!teamId) return;
+  if (!ensureSupabase() || !teamId) return;
 
   try {
     const { data, error } = await supabase
       .from("team_players")
-      .select("tour_id, player_id, role_id, players(name, photo)")
+      .select("tour_id, player_id, players(name, photo)")
       .eq("team_id", teamId)
       .order("tour_id", { ascending: true });
 
@@ -344,49 +343,40 @@ async function renderTeamHistory(teamId) {
     const historyEl = document.getElementById("team-history");
     historyEl.innerHTML = "";
 
-    // группировка по турам
-    const grouped = {};
-    data.forEach(row => {
-      if (!grouped[row.tour_id]) grouped[row.tour_id] = [];
-      grouped[row.tour_id].push(row);
-    });
+    let currentTour = null;
 
-    // рендер по каждому туру
-    Object.keys(grouped).forEach(tourId => {
-      const block = document.createElement("div");
-      block.className = "tour-block";
+    data.forEach(p => {
+      // Если новый тур, добавляем заголовок
+      if (p.tour_id !== currentTour) {
+        currentTour = p.tour_id;
 
-      const title = document.createElement("h3");
-      title.textContent = getTourLabel(parseInt(tourId));
-      block.appendChild(title);
+        const tourLabel = document.createElement("h3");
+        tourLabel.textContent = getTourLabel(currentTour);
+        historyEl.appendChild(tourLabel);
+      }
 
-      const list = document.createElement("div");
-      list.className = "players-list";
+      // Создаём карточку игрока
+      const playerDiv = document.createElement("div");
+      playerDiv.className = "player-card";
 
-      grouped[tourId].forEach(p => {
-        const playerDiv = document.createElement("div");
-        playerDiv.className = "player-card";
+      const img = document.createElement("img");
+      img.src = p.players?.photo || DEFAULT_AVATAR;
+      img.alt = p.players?.name || "Player";
 
-        const img = document.createElement("img");
-        img.src = p.players?.photo || DEFAULT_AVATAR;
-        img.alt = p.players?.name || "Player";
+      const name = document.createElement("span");
+      name.textContent = p.players?.name || "Неизвестный";
 
-        const name = document.createElement("span");
-        name.textContent = p.players?.name || "Неизвестный";
+      playerDiv.appendChild(img);
+      playerDiv.appendChild(name);
 
-        playerDiv.appendChild(img);
-        playerDiv.appendChild(name);
-        list.appendChild(playerDiv);
-      });
-
-      block.appendChild(list);
-      historyEl.appendChild(block);
+      historyEl.appendChild(playerDiv);
     });
 
   } catch (err) {
     console.error("Ошибка загрузки истории состава:", err);
   }
 }
+
 
 async function showRoster(teamId, currentTour=1){
   try {
@@ -464,6 +454,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
