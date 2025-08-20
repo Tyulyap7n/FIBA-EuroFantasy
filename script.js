@@ -6,8 +6,7 @@
 */
 
 /* ========== Константы / состояния ========== */
-const { data, error } = await supabase.from("user_teams").select("team_name").eq("user_id", user.id).single();
-document.querySelector("header h1").textContent = data.team_name;
+
 const BUDGET_CAP = 60;
 const DEFAULT_AVATAR = ""; // путь к заглушке, если нужно
 const playersPerPage = 8;
@@ -58,6 +57,17 @@ function ensureSupabase() {
   }
   return true;
 }
+document.addEventListener("DOMContentLoaded", async () => {
+  const { data, error } = await supabase
+    .from("user_teams")
+    .select("team_name")
+    .eq("user_id", user.id)
+    .single();
+
+  if (data) {
+    document.querySelector("header h1").textContent = data.team_name;
+  }
+});
 
 /* ========== Загрузка ролей + маппинг ROLE_OPTIONS ========== */
 async function loadRolesFromDb() {
@@ -826,6 +836,7 @@ try {
     });
   });
 });
+
 
 
 
