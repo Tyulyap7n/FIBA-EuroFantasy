@@ -55,7 +55,8 @@ body{
 .header-links {
     flex: 0 0 auto;
     text-align: center;
-    margin: 0 auto 0 -20px;
+    padding-left: 20px; /* отступ содержимого внутри блока */
+    margin: 0 auto;     /* центрирование самого блока */
 }
 
 /* Правый логотип */
@@ -521,6 +522,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
