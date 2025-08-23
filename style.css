@@ -38,7 +38,59 @@ body{
 .site-header {
     display: flex;
     align-items: center;
-    gap: 20px; /* расстояние между элементами */
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #f8f9fa; /* optional */
+}
+
+.logo-container {
+    flex: 0 0 auto;
+}
+
+.logo-container:first-child {
+    /* Левый логотип */
+    text-align: left;
+}
+
+.header-links {
+    /* Центральный логотип */
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.logo-container:last-child {
+    /* Правый логотип */
+    text-align: right;
+    margin-left: auto;
+}
+
+/* Стили для изображений */
+.site-header img {
+    max-height: 50px; /* регулируйте по необходимости */
+    width: auto;
+    display: block;
+}
+
+/* Для адаптивности */
+@media (max-width: 768px) {
+    .site-header {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .logo-container:first-child,
+    .logo-container:last-child {
+        order: 2;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .header-links {
+        order: 1;
+        flex: 0 0 100%;
+        text-align: center;
+    }
 }
 /* Generic elements */
 h1,h2,h3,h4,h5,h6 { margin: 0; }
@@ -451,6 +503,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
