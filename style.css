@@ -420,7 +420,18 @@ a img {
 #players-table th { background: rgba(255,255,255,0.04); font-weight: 700; }
 #players-table tbody tr { background: var(--purple); transition: background .18s, color .18s; }
 #players-table tbody tr:hover { background: var(--orange); color: var(--black); }
-#players-table img { width:48px; height:48px; object-fit: cover; border-radius:6px; align: center;}
+#players-table img { 
+    width:58px; 
+    height:58px; 
+    object-fit: cover; 
+    border-radius:6px;
+    margin: 0 auto; /* центрирование по горизонтали */
+    display: block; /* обязательно для работы margin: auto */
+}
+#players-table td:has(img) {
+    vertical-align: middle;
+    text-align: center;
+}
 
 /* Emphasize 4th column cell style (as in original) */
 #players-table tbody td:nth-child(4) { font-weight: bold; font-size: 24px; }
@@ -510,6 +521,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
