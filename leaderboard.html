@@ -306,7 +306,7 @@ async function loadLeaderboard() {
         totalSum += points;
 
         const cell = document.createElement('td');
-        cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">Состав</button>`;
+        cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">ROSTER</button>`;
         row.appendChild(cell);
       }
 
@@ -465,5 +465,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
