@@ -60,7 +60,7 @@ button, input, select, textarea {
   justify-content: center;
   cursor: pointer;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 8px 22px;
   border: none;
   background: var(--purple);
   color: var(--white);
@@ -451,6 +451,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
