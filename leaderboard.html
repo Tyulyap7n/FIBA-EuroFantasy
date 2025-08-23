@@ -446,7 +446,6 @@ async function showRoster(teamId, currentTour=1){
         <div class="name">${player.first_name} ${player.last_name}</div>
         <div class="points">Очки: ${Math.round(points)}</div>
         <div class="club">${player.country}</div>
-        <div class="role_id">${player.role_id}</div>
       `;
       list.appendChild(card);
     });
@@ -465,6 +464,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
