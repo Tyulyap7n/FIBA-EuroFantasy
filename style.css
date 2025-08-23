@@ -502,7 +502,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 }
 #save-roster {
   background: linear-gradient(135deg, #FE641C, #FDE600);
-  color: #000;
+  color: white;
   font-weight: 900;
   font-size: 1.1rem;
   padding: 12px 28px;
@@ -522,6 +522,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
