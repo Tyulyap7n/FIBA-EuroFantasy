@@ -420,7 +420,7 @@ function renderPlayersTable() {
       <td>${p.price}$</td>
       <td>${p.avg}</td>
       <td>${p.pts}</td>
-      <td><!-- 3PTM скрываем в UI по твоему требованию; если нужно — вставь сюда --> — </td>
+      <td>${p.threes}</td>
       <td>${p.ast}</td>
       <td>${p.reb}</td>
       <td>${p.stl}</td>
@@ -808,6 +808,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
+
 
 
 
