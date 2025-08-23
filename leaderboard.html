@@ -183,19 +183,19 @@
   font-size: 0.9rem; /* Размер текста */
   font-weight: bold; /* Жирный шрифт */
   margin-bottom: 0.3rem; /* Отступ снизу */
-  color: var(--yellow); /* Цвет текста */
+  color: var(--orange); /* Цвет текста */
 }
 
 /* Клуб/страна игрока */
 .roster-card .club {
   font-size: 0.8rem; /* Размер текста */
-  color: var(--yellow); /* Цвет текста */
+  color: var(--orange); /* Цвет текста */
 }
 
 /* Очки игрока */
 .roster-card .points {
   font-size: 0.85rem; /* Размер текста */
-  color: var(--yellow); /* Цвет жёлтый, выделяем */
+  color: var(--orange);  /* Цвет жёлтый, выделяем */
   margin-bottom: 0.3rem; /* Отступ снизу */
 }
 a img {
@@ -214,27 +214,27 @@ a img {
   </div>
 </header>
 <div class="leaderboard-page">
-  <h1>Турнирная таблица</h1>
+  <h1>LEADERBOARD</h1>
   <table class="leaderboard-table">
     <thead>
       <tr>
-        <th>Команда</th>
-        <th>Тур 1</th>
-        <th>Тур 2-3</th>
-        <th>Тур 4</th>
-        <th>Тур 5</th>
+        <th>TEAM</th>
+        <th>TOUR 1</th>
+        <th>TOUR 2-3</th>
+        <th>TOUR 4</th>
+        <th>TOUR 5</th>
         <th>1/8</th>
         <th>1/4</th>
         <th>1/2</th>
-        <th>Финалы</th>
-        <th>Итого</th>
+        <th>FINALS</th>
+        <th>SUMMARY</th>
       </tr>
     </thead>
     <tbody id="leaderboard-body"></tbody>
   </table>
 
   <div class="roster-panel hidden" id="roster-panel">
-    <h2>Состав команды</h2>
+    <h2>TEAM ROSTER</h2>
     <div class="roster-list" id="roster-list"></div>
     <div id="team-history"></div>
   </div>
@@ -446,7 +446,7 @@ async function showRoster(teamId, currentTour=1){
         <div class="name">${player.first_name} ${player.last_name}</div>
         <div class="points">Очки: ${Math.round(points)}</div>
         <div class="club">${player.country}</div>
-        <div class="position">${player.position}</div>
+        <div class="roles">${player.roles}</div>
       `;
       list.appendChild(card);
     });
@@ -465,4 +465,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
