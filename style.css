@@ -35,38 +35,39 @@ body{
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* === HEADER STYLES === */
 .site-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
-    background: #f8f9fa; /* optional */
+    background: var(--black);
+    border-bottom: 3px solid var(--white);
 }
 
-.logo-container {
-    flex: 0 0 auto;
-}
-
+/* Левый логотип */
 .logo-container:first-child {
-    /* Левый логотип */
+    flex: 0 0 auto;
     text-align: left;
 }
 
+/* Центральный логотип */
 .header-links {
-    /* Центральный логотип */
     flex: 0 0 auto;
     text-align: center;
+    margin: 0 auto;
 }
 
+/* Правый логотип */
 .logo-container:last-child {
-    /* Правый логотип */
+    flex: 0 0 auto;
     text-align: right;
     margin-left: auto;
 }
 
-/* Стили для изображений */
+/* Стили для изображений в хэдере */
 .site-header img {
-    max-height: 50px; /* регулируйте по необходимости */
+    max-height: 60px; /* единый размер для всех логотипов */
     width: auto;
     display: block;
 }
@@ -77,6 +78,7 @@ body{
         flex-wrap: wrap;
         justify-content: center;
         gap: 15px;
+        padding: 10px;
     }
     
     .logo-container:first-child,
@@ -90,6 +92,11 @@ body{
         order: 1;
         flex: 0 0 100%;
         text-align: center;
+    }
+    
+    .site-header img {
+        max-height: 50px; /* немного уменьшаем на мобильных */
+        margin: 0 auto;
     }
 }
 /* Generic elements */
@@ -503,6 +510,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
