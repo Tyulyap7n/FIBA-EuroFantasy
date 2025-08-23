@@ -400,8 +400,13 @@ a img {
   min-width: 0;
 }
 .table-controls { margin-bottom: 10px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
-.table-controls .filter-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.filter-row label { color: var(--white); margin-right: 8px; font-size: 14px; display:flex; gap:8px; align-items:center; }
+.table-controls .filter-row {
+    display: flex;
+    flex-direction: column; /* вертикальное расположение */
+    gap: 10px; /* расстояние между элементами */
+    align-items: flex-start; /* выравнивание по левому краю */
+}
+.filter-row label { color: var(--white); margin-right: 8px; font-size: 14px; display:flex; gap:8px; align-items:center; white-space: nowrap; /* чтобы текст не переносился */}
 .filter-row select, .filter-row input, .filter-row button {
   background: var(--purple);
   color: var(--white);
@@ -522,6 +527,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
