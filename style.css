@@ -381,6 +381,47 @@ a img {
   border-radius: 8px;
   display: block;
 }
+#scoring-panel img {
+  max-width: 60%;  /* меньше по ширине */
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+/* Модальное окно Rules */
+.scoring-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 2000;
+}
+
+.scoring-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scoring-modal-content {
+  background: var(--purple);
+  padding: 12px;
+  border-radius: 12px;
+  border: 3px solid var(--white);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.scoring-modal-content img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
 /* Отображение имени пользователя в хэдере */
 .user-name {
   color: var(--yellow);
@@ -527,6 +568,7 @@ input { padding: 10px; border-radius:5px; border: none; }
 button:focus, a:focus, input:focus, select:focus { outline: 3px solid rgba(255,230,50,0.18); outline-offset: 2px; }
 
 /* End of file */
+
 
 
 
