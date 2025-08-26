@@ -114,110 +114,109 @@
         </div>
       </div>
 
-		<div class="starting-vi">STARTING VI</div>
-		<div class="roles-lineup">
-		  <div class="role-slot" id="slot-Scorer">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">SCORER</div>
-		    <button class="remove-btn" onclick="removePlayer('Scorer')" style="display: none;">✕ Удалить</button>
-		  </div>
-		  
-		  <div class="role-slot" id="slot-Assistant">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">ASSISTANT</div>
-		    <button class="remove-btn" onclick="removePlayer('Assistant')" style="display: none;">✕ Удалить</button>
-		  </div>
-		  
-		  <div class="role-slot" id="slot-Rebounder">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">REBOUNDER</div>
-		    <button class="remove-btn" onclick="removePlayer('Rebounder')" style="display: none;">✕ Удалить</button>
-		  </div>
-		  
-		  <div class="role-slot" id="slot-Stopper">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">STOPPER</div>
-		    <button class="remove-btn" onclick="removePlayer('Stopper')" style="display: none;">✕ Удалить</button>
-		  </div>
-		  
-		  <div class="role-slot" id="slot-Shooter">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">SHOOTER</div>
-		    <button class="remove-btn" onclick="removePlayer('Shooter')" style="display: none;">✕ Удалить</button>
-		  </div>
-		  
-		  <div class="role-slot" id="slot-Young">
-		    <div class="empty-slot">—</div>
-		    <div class="role-name">SURPRISE</div>
-		    <button class="remove-btn" onclick="removePlayer('Young')" style="display: none;">✕ Удалить</button>
-		  </div>
-		</div>
-		
-		<script>
-		// Функция для удаления игрока из слота
-		function removePlayer(role) {
-		  const slot = document.getElementById(`slot-${role}`);
-		  const emptySlot = slot.querySelector('.empty-slot');
-		  const removeBtn = slot.querySelector('.remove-btn');
-		  
-		  emptySlot.textContent = '—';
-		  removeBtn.style.display = 'none';
-		  
-		  console.log(`Игрок удален из роли: ${role}`);
-		}
-		</script>
-		
-		<style>
-		.remove-btn {
-		  margin-top: 8px;
-		  padding: 4px 8px;
-		  background-color: #ff4757;
-		  color: white;
-		  border: none;
-		  border-radius: 4px;
-		  cursor: pointer;
-		  font-size: 12px;
-		  transition: background-color 0.2s;
-		}
-		
-		.remove-btn:hover {
-		  background-color: #ff3742;
-		}
-		
-		.role-slot {
-		  display: flex;
-		  flex-direction: column;
-		  align-items: center;
-		  margin: 10px;
-		  padding: 10px;
-		  border: 1px solid #ddd;
-		  border-radius: 8px;
-		}
-		
-		.empty-slot {
-		  min-height: 20px;
-		  margin: 5px 0;
-		}
-		
-		.role-name {
-		  font-weight: bold;
-		  margin: 5px 0;
-		}
-		
-		.roles-lineup {
-		  display: flex;
-		  flex-wrap: wrap;
-		  justify-content: center;
-		  gap: 15px;
-		}
-		
-		.starting-vi {
-		  text-align: center;
-		  font-size: 24px;
-		  font-weight: bold;
-		  margin-bottom: 20px;
-		}
-		</style>
+<div class="starting-vi">STARTING VI</div>
+<div class="roles-lineup">
+  <div class="role-slot" id="slot-Scorer">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SCORER</div>
+    <button class="remove-btn" onclick="removePlayer('Scorer')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Assistant">
+    <div class="empty-slot">—</div>
+    <div class="role-name">ASSISTANT</div>
+    <button class="remove-btn" onclick="removePlayer('Assistant')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Rebounder">
+    <div class="empty-slot">—</div>
+    <div class="role-name">REBOUNDER</div>
+    <button class="remove-btn" onclick="removePlayer('Rebounder')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Stopper">
+    <div class="empty-slot">—</div>
+    <div class="role-name">STOPPER</div>
+    <button class="remove-btn" onclick="removePlayer('Stopper')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Shooter">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SHOOTER</div>
+    <button class="remove-btn" onclick="removePlayer('Shooter')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Young">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SURPRISE</div>
+    <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
+  </div>
+</div>
+
+<script>
+// Функция для удаления игрока из слота
+function removePlayer(role) {
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+  const removeBtn = slot.querySelector('.remove-btn');
+  
+  emptySlot.textContent = '—';
+  
+  console.log(`Игрок удален из роли: ${role}`);
+}
+</script>
+
+<style>
+.remove-btn {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.remove-btn:hover {
+  background-color: #ff3742;
+}
+
+.role-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.empty-slot {
+  min-height: 20px;
+  margin: 5px 0;
+}
+
+.role-name {
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.roles-lineup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+.starting-vi {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+</style>
 		<div id="team-history"></div>
 
       <button id="save-roster" class="btn-yellow">Save roster</button>
@@ -226,6 +225,7 @@
 </main>
 </body>
 </html>
+
 
 
 
