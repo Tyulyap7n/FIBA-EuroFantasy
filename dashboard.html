@@ -114,15 +114,85 @@
         </div>
       </div>
 
-      <div class="starting-vi">STARTING VI</div>
-      <div class="roles-lineup">
-        <div class="role-slot" id="slot-Scorer"><div class="empty-slot">—</div><div class="role-name">SCORER</div></div>
-        <div class="role-slot" id="slot-Assistant"><div class="empty-slot">—</div><div class="role-name">ASSISTANT</div></div>
-        <div class="role-slot" id="slot-Rebounder"><div class="empty-slot">—</div><div class="role-name">REBOUNDER</div></div>
-        <div class="role-slot" id="slot-Stopper"><div class="empty-slot">—</div><div class="role-name">STOPPER</div></div>
-        <div class="role-slot" id="slot-Shooter"><div class="empty-slot">—</div><div class="role-name">SHOOTER</div></div>
-        <div class="role-slot" id="slot-Young"><div class="empty-slot">—</div><div class="role-name">SURPRISE</div></div>
-      </div>
+<div class="starting-vi">STARTING VI</div>
+<div class="roles-lineup">
+  <div class="role-slot" id="slot-Scorer">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SCORER</div>
+    <button class="remove-btn" onclick="removePlayer('Scorer')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Assistant">
+    <div class="empty-slot">—</div>
+    <div class="role-name">ASSISTANT</div>
+    <button class="remove-btn" onclick="removePlayer('Assistant')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Rebounder">
+    <div class="empty-slot">—</div>
+    <div class="role-name">REBOUNDER</div>
+    <button class="remove-btn" onclick="removePlayer('Rebounder')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Stopper">
+    <div class="empty-slot">—</div>
+    <div class="role-name">STOPPER</div>
+    <button class="remove-btn" onclick="removePlayer('Stopper')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Shooter">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SHOOTER</div>
+    <button class="remove-btn" onclick="removePlayer('Shooter')">✕ Удалить</button>
+  </div>
+  
+  <div class="role-slot" id="slot-Young">
+    <div class="empty-slot">—</div>
+    <div class="role-name">SURPRISE</div>
+    <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
+  </div>
+</div>
+
+<script>
+function removePlayer(role) {
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+  
+  // Проверяем, есть ли игрок в слоте (не отображается ли прочерк)
+  if (emptySlot.textContent !== '—') {
+    // Возвращаем прочерк и скрываем кнопку удаления
+    emptySlot.textContent = '—';
+    
+    // Здесь можно добавить логику для возвращения игрока в список доступных
+    console.log(`Игрок удален из роли: ${role}`);
+  }
+}
+</script>
+
+<style>
+.remove-btn {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.remove-btn:hover {
+  background-color: #ff3742;
+}
+
+.role-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+}
+</style>
 		<div id="team-history"></div>
 
       <button id="save-roster" class="btn-yellow">Save roster</button>
@@ -131,26 +201,3 @@
 </main>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
