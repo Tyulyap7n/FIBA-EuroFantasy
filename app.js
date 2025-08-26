@@ -74,3 +74,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   initTabs();
   await fetchPlayersOnce();
 });
+
