@@ -7,7 +7,7 @@
 
 /* ========== Константы / состояния ========== */
 
-const BUDGET_CAP = 60;
+const BUDGET_CAP = 70;
 const DEFAULT_AVATAR = ""; // путь к заглушке, если нужно
 const playersPerPage = 8;
 const ROLE_KEYS = [
@@ -807,6 +807,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
+
 
 
 
