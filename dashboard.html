@@ -17,93 +17,6 @@
   <script src="script.js" defer></script>
   <!-- no-op (оставлен) -->
   <script src="dashboard.js" defer></script>
-	<style>
-    /* ЯВНЫЕ СТИЛИ ДЛЯ КНОПОК УДАЛЕНИЯ */
-    .remove-btn {
-      margin-top: 12px;
-      padding: 8px 12px;
-      background-color: #ff4757;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      transition: all 0.2s;
-      display: block !important; /* Принудительно показываем */
-      visibility: visible !important;
-      opacity: 1 !important;
-      width: 100%;
-      max-width: 120px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      z-index: 10;
-      position: relative;
-    }
-    
-    .remove-btn:hover {
-      background-color: #ff3742;
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    }
-    
-    .role-slot {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 15px;
-      padding: 15px;
-      border: 2px solid #ddd;
-      border-radius: 10px;
-      background: #f9f9f9;
-      min-width: 140px;
-      position: relative;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: all 0.3s;
-    }
-    
-    .role-slot:hover {
-      border-color: #ffcc00;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
-    
-    .empty-slot {
-      min-height: 30px;
-      margin: 10px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: #888;
-    }
-    
-    .role-name {
-      font-weight: bold;
-      margin: 10px 0;
-      font-size: 16px;
-      text-align: center;
-      color: #333;
-      text-transform: uppercase;
-    }
-    
-    .roles-lineup {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin: 20px 0;
-    }
-    
-    .starting-vi {
-      text-align: center;
-      font-size: 28px;
-      font-weight: bold;
-      margin: 30px 0 20px;
-      color: #1c6b9e;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }
-  </style>
 </head>
 <body>
 <header class="site-header">
@@ -252,20 +165,6 @@ function removePlayer(role) {
   console.log(`Игрок удален из роли: ${role}`);
 }
 </script>
-		<script>
-// Дополнительная проверка: убедимся, что кнопки не скрыты другими стилями
-document.addEventListener('DOMContentLoaded', function() {
-  // Принудительно показываем все кнопки удаления
-  const removeButtons = document.querySelectorAll('.remove-btn');
-  removeButtons.forEach(btn => {
-    btn.style.display = 'block';
-    btn.style.visibility = 'visible';
-    btn.style.opacity = '1';
-  });
-  
-  console.log('Кнопки удаления активированы');
-});
-</script>
 		<div id="team-history"></div>
 
       <button id="save-roster" class="btn-yellow">Save roster</button>
@@ -274,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </main>
 </body>
 </html>
+
 
 
 
