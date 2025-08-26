@@ -160,7 +160,7 @@ function removePlayer(role) {
   
   // Проверяем, есть ли игрок в слоте (не отображается ли прочерк)
   if (emptySlot.textContent !== '—') {
-    // Возвращаем прочерк и скрываем кнопку удаления
+    // Возвращаем прочерк
     emptySlot.textContent = '—';
     
     // Здесь можно добавить логику для возвращения игрока в список доступных
@@ -191,6 +191,12 @@ function removePlayer(role) {
   flex-direction: column;
   align-items: center;
   margin: 10px;
+  position: relative;
+}
+
+/* Стиль для скрытия кнопки, если слот пустой */
+.role-slot .empty-slot:only-child ~ .remove-btn {
+  display: none;
 }
 </style>
 		<div id="team-history"></div>
@@ -201,3 +207,4 @@ function removePlayer(role) {
 </main>
 </body>
 </html>
+
