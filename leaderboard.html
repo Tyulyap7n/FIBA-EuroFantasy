@@ -471,13 +471,15 @@ function renderPage(page) {
     tbody.appendChild(row);
   }
   // Обработчики кнопок ROSTER
-  document.querySelectorAll('.show-lineup').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      const teamId = e.target.dataset.teamId;
-      const tour = e.target.dataset.tour;
-      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour == "Финалы" ? 99 : parseInt(tour));
+    document.querySelectorAll('.show-lineup').forEach(btn => {
+      btn.onclick = async function(e) {
+        e.stopPropagation();
+        const teamId = this.dataset.teamId;
+        const tourLabel = this.dataset.tour;
+        const tourId = tourLabel.includes("-") ? parseInt(tourLabel.split("-")[0]) : tourLabel === "Финалы" ? 99 : parseInt(tourLabel);
+        await showRoster(teamId, tourId);
+      };
     });
-  });
 }
 function renderPagination() {
   const paginationEl = document.getElementById('pagination');
@@ -521,7 +523,7 @@ function renderPagination() {
   paginationEl.appendChild(nextButton);
 }
 async function renderTeamHistory(teamId) {
-  if (!ensureSupabase() || !teamId) return;
+  if (!teamId) return;
   try {
     const { data, error } = await supabase
       .from("team_players")
@@ -630,4 +632,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
