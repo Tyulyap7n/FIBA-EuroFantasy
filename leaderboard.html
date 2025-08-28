@@ -324,6 +324,11 @@ async function loadAllData() {
       players: cachedData.players.length
     });
 
+    // Отладочная информация о составе команд
+    console.log('Пример данных team_players:', cachedData.teamPlayers.slice(0, 5));
+    console.log('Уникальные team_id:', [...new Set(cachedData.teamPlayers.map(tp => tp.team_id))]);
+    console.log('Уникальные tour_id:', [...new Set(cachedData.teamPlayers.map(tp => tp.tour_id))]);
+
     return true;
   } catch (error) {
     console.error('Критическая ошибка загрузки данных:', error);
@@ -340,11 +345,14 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
 
   let points = 0;
   
-  if (tourId === 2 || tourId === 3) {
+  // Преобразуем tourId в число для сравнения
+  const numericTourId = Number(tourId);
+  
+  if (numericTourId === 2 || numericTourId === 3) {
     // Для туров 2-3 суммируем очки за оба тура
     [2, 3].forEach(tour => {
       const stats = cachedData.playerStats.find(s => 
-        s.player_id === playerId && s.tour === tour
+        s.player_id === playerId && Number(s.tour) === tour
       ) || {};
       
       const context = { ...stats, count: stats.count || 1 };
@@ -358,7 +366,7 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
     });
   } else {
     const stats = cachedData.playerStats.find(s => 
-      s.player_id === playerId && s.tour === tourId
+      s.player_id === playerId && Number(s.tour) === numericTourId
     ) || {};
     
     const context = { ...stats, count: stats.count || 1 };
@@ -375,7 +383,9 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
 }
 
 function calculateTeamPoints(teamId) {
-  const teamPlayers = cachedData.teamPlayers.filter(tp => tp.team_id === teamId);
+  // Преобразуем teamId в строку для сравнения (так как в данных он может быть строкой)
+  const teamIdStr = String(teamId);
+  const teamPlayers = cachedData.teamPlayers.filter(tp => String(tp.team_id) === teamIdStr);
   
   if (teamPlayers.length === 0) {
     console.warn('Нет игроков в команде:', teamId);
@@ -399,8 +409,9 @@ function calculateTeamPoints(teamId) {
 
   teamPlayers.forEach(tp => {
     const points = calculatePlayerPoints(tp.player_id, tp.role_id, tp.tour_id);
+    const tourId = Number(tp.tour_id);
     
-    switch (tp.tour_id) {
+    switch (tourId) {
       case 1:
         pointsByTour.tour_1 += points;
         break;
@@ -617,12 +628,25 @@ function renderPagination() {
 
 async function showRoster(teamId, currentTour = 1) {
   try {
+    console.log('Показ состава команды:', teamId, 'тур:', currentTour);
+    
+    // Преобразуем teamId в строку для сравнения
+    const teamIdStr = String(teamId);
+    
     const teamPlayers = cachedData.teamPlayers.filter(
-      tp => tp.team_id === teamId && tp.tour_id === currentTour
+      tp => String(tp.team_id) === teamIdStr && Number(tp.tour_id) === currentTour
     );
 
+    console.log('Найдено игроков в составе:', teamPlayers.length, 'для команды', teamId, 'тура', currentTour);
+    console.log('Данные teamPlayers:', teamPlayers);
+
     if (teamPlayers.length === 0) {
-      alert(`Нет данных о составе команды для тура ${currentTour}`);
+      // Проверим, есть ли вообще данные для этой команды
+      const allTeamPlayers = cachedData.teamPlayers.filter(tp => String(tp.team_id) === teamIdStr);
+      console.log('Все игроки команды:', allTeamPlayers);
+      console.log('Доступные туры для команды:', [...new Set(allTeamPlayers.map(tp => tp.tour_id))]);
+      
+      alert(`Нет данных о составе команды для тура ${currentTour}. Доступные туры: ${[...new Set(allTeamPlayers.map(tp => tp.tour_id))].join(', ')}`);
       return;
     }
 
