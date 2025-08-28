@@ -294,7 +294,7 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 let currentPage = 1;
 let allTeams = [];
 
@@ -569,8 +569,18 @@ async function renderTeamHistory(teamId) {
     console.error("Ошибка загрузки истории состава:", err);
   }
 }
-async function showRoster(teamId, currentTour=1){
+async function showRoster(teamId, currentTour=1) {
   try {
+    const panel = document.getElementById('roster-panel');
+    // Если панель уже открыта для этой команды и тура — скрываем её
+    if (!panel.classList.contains('hidden') && panel.dataset.currentTeamId === teamId && panel.dataset.currentTour === currentTour) {
+      panel.classList.add('hidden');
+      return;
+    }
+    // Сохраняем текущие teamId и tour в дата-атрибуты панели
+    panel.dataset.currentTeamId = teamId;
+    panel.dataset.currentTour = currentTour;
+
     const { data: teamPlayers } = await supabase
       .from('team_players')
       .select('player_id, role_id (id, name, formula), price')
@@ -632,5 +642,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
