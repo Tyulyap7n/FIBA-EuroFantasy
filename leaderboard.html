@@ -305,7 +305,6 @@ async function calculateTeamPoints(teamId, currentTour = 1) {
     return 0;
   }
 }
-
 async function loadLeaderboard() {
   try {
     // 1. Загружаем список команд
@@ -368,10 +367,11 @@ async function loadLeaderboard() {
         const context = { ...stat, count: stat.count || 1 };
         try {
           const fn = new Function(...Object.keys(context), `return (${formula});`);
-          points = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+          points = fn(...Object.values(context));
+          if (isNaN(points)) points = 0;
         } catch (e) {
           console.error('Ошибка расчёта очков игрока:', e);
-          continue;
+          points = 0;
         }
 
         // Если игрока ещё нет в объекте, добавляем его
@@ -392,31 +392,31 @@ async function loadLeaderboard() {
         // Добавляем очки игрока в соответствующий тур
         switch (player.tour_id) {
           case 1:
-            playerTourPoints[player.player_id].tour_1 += points;
+            playerTourPoints[player.player_id].tour_1 = points;
             break;
           case 2:
-            playerTourPoints[player.player_id].tour_2 += points;
+            playerTourPoints[player.player_id].tour_2 = points;
             break;
           case 3:
-            playerTourPoints[player.player_id].tour_3 += points;
+            playerTourPoints[player.player_id].tour_3 = points;
             break;
           case 4:
-            playerTourPoints[player.player_id].tour_4 += points;
+            playerTourPoints[player.player_id].tour_4 = points;
             break;
           case 5:
-            playerTourPoints[player.player_id].tour_5 += points;
+            playerTourPoints[player.player_id].tour_5 = points;
             break;
           case 6:
-            playerTourPoints[player.player_id].tour_6 += points;
+            playerTourPoints[player.player_id].tour_6 = points;
             break;
           case 7:
-            playerTourPoints[player.player_id].tour_7 += points;
+            playerTourPoints[player.player_id].tour_7 = points;
             break;
           case 8:
-            playerTourPoints[player.player_id].tour_8 += points;
+            playerTourPoints[player.player_id].tour_8 = points;
             break;
           case 99:
-            playerTourPoints[player.player_id].tour_finals += points;
+            playerTourPoints[player.player_id].tour_finals = points;
             break;
         }
       }
@@ -471,8 +471,6 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
-
-
 
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
@@ -738,6 +736,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
