@@ -340,7 +340,7 @@ async function loadLeaderboard() {
         const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
         if (!stat) continue;
 
-        // Используем функцию calculateTeamPoints или аналогичную логику для расчета очков
+        // Используем очки игрока
         const points = stat.points; // или используйте вашу логику расчета очков
 
         // Добавляем очки игрока в соответствующий тур
@@ -396,9 +396,19 @@ async function loadLeaderboard() {
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
 
-    for (const team of sortedTeams) {
+    for (let i = 0; i < sortedTeams.length; i++) {
+      const team = sortedTeams[i];
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${team.name}</td>`;
+
+      // Добавляем столбец "Место"
+      const placeCell = document.createElement('td');
+      placeCell.innerText = i + 1;
+      row.appendChild(placeCell);
+
+      // Добавляем название команды
+      const nameCell = document.createElement('td');
+      nameCell.innerText = team.name;
+      row.appendChild(nameCell);
 
       // Очки по турам
       const tours = [
@@ -441,6 +451,7 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
 
 
 
@@ -580,6 +591,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
