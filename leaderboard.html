@@ -334,19 +334,19 @@ async function loadLeaderboard() {
       };
     });
 
-    // 4. Загружаем данные из leaderboard_cache
+    // 4. Загружаем данные о составе команд
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
+      .from('team_players')
+      .select('team_id, player_id, tour_id, role_id (formula)');
+
+    if (teamPlayersError) throw teamPlayersError;
+
+    // 5. Загружаем данные статистики игроков
     const { data: playerStats, error: statsError } = await supabase
-      .from('leaderboard_cache')
+      .from('player_stats')
       .select('*');
 
     if (statsError) throw statsError;
-
-    // 5. Загружаем данные о составе команд
-    const { data: teamPlayers, error: teamPlayersError } = await supabase
-      .from('team_players')
-      .select('team_id, player_id, tour_id, role_id');
-
-    if (teamPlayersError) throw teamPlayersError;
 
     // 6. Рассчитываем очки для каждой команды
     for (const team of teams) {
@@ -357,10 +357,22 @@ async function loadLeaderboard() {
       const playerTourPoints = {};
 
       for (const player of playersInTeam) {
-        const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
-        if (!stat) continue;
+        const stats = playerStats.filter(s => s.player_id === player.player_id && s.tour === player.tour_id);
+        if (!stats.length) continue;
 
-        const points = stat.points;
+        const stat = stats[0];
+        const formula = player.role_id?.formula;
+        if (!formula) continue;
+
+        let points = 0;
+        const context = { ...stat, count: stat.count || 1 };
+        try {
+          const fn = new Function(...Object.keys(context), `return (${formula});`);
+          points = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+        } catch (e) {
+          console.error('Ошибка расчёта очков игрока:', e);
+          continue;
+        }
 
         // Если игрока ещё нет в объекте, добавляем его
         if (!playerTourPoints[player.player_id]) {
@@ -433,15 +445,15 @@ async function loadLeaderboard() {
       // Записываем очки команды
       teamPoints[teamId] = {
         name: team.team_name,
-        tour_1,
-        tour_2_3,
-        tour_4,
-        tour_5,
-        tour_6,
-        tour_7,
-        tour_8,
-        tour_finals,
-        total: tour_1 + tour_2_3 + tour_4 + tour_5 + tour_6 + tour_7 + tour_8 + tour_finals,
+        tour_1: Math.round(tour_1),
+        tour_2_3: Math.round(tour_2_3),
+        tour_4: Math.round(tour_4),
+        tour_5: Math.round(tour_5),
+        tour_6: Math.round(tour_6),
+        tour_7: Math.round(tour_7),
+        tour_8: Math.round(tour_8),
+        tour_finals: Math.round(tour_finals),
+        total: Math.round(tour_1 + tour_2_3 + tour_4 + tour_5 + tour_6 + tour_7 + tour_8 + tour_finals),
       };
     }
 
@@ -459,6 +471,7 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
 
 
 function renderPage(page) {
@@ -725,4 +738,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
