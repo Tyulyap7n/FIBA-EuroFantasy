@@ -116,6 +116,30 @@
 .leaderboard-table tr:nth-child(even) {
   background: #222; /* Тёмный фон для чётных строк */
 }
+    /* Цена игрока (кружок справа сверху от фото) */
+.roster-card .price-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: var(--orange);
+  color: black;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  z-index: 10;
+}
+/* Контейнер для фото игрока (относительное позиционирование) */
+.roster-card .player-photo-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
 /* Эффект при наведении на строку */
 .leaderboard-table tr:hover {
   background: rgba(254,100,28,0.15); /* Полупрозрачный оранжевый фон */
@@ -584,14 +608,15 @@ async function showRoster(teamId, currentTour=1){
       const card=document.createElement('div');
       card.className='roster-card';
         card.innerHTML=`
-          <img src="${player.photo_url||'image/ball.svg'}" alt="">
-          <div class="name">${player.first_name} ${player.last_name}</div>
+          <div class="player-photo-container">
+            <img src="${player.photo_url||'image/ball.svg'}" alt="">
+            <div class="price-badge">${p.price || 0}</div>
+          </div>
           <div class="role">${p.role_id?.name || 'Без роли'}</div>
-          <div class="price">Цена: ${p.price || 0}</div>
-          <div class="points">Очки: ${Math.round(points)}</div>
+          <div class="name">${player.first_name} ${player.last_name}</div>
           <div class="club">${player.country}</div>
+          <div class="points">Очки: ${Math.round(points)}</div>
         `;
-
       list.appendChild(card);
     });
     panel.classList.remove('hidden');
@@ -605,3 +630,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
