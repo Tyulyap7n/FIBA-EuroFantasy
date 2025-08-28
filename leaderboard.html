@@ -116,30 +116,6 @@
 .leaderboard-table tr:nth-child(even) {
   background: #222; /* Тёмный фон для чётных строк */
 }
-    /* Цена игрока (кружок справа сверху от фото) */
-.roster-card .price-badge {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: var(--orange);
-  color: black;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: bold;
-  z-index: 10;
-}
-/* Контейнер для фото игрока (относительное позиционирование) */
-.roster-card .player-photo-container {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 0.5rem;
-}
-
 /* Эффект при наведении на строку */
 .leaderboard-table tr:hover {
   background: rgba(254,100,28,0.15); /* Полупрозрачный оранжевый фон */
@@ -219,14 +195,6 @@
   margin-bottom: 0.3rem; /* Отступ снизу */
   color: var(--orange); /* Цвет текста */
 }
-/* Цена игрока */
-.roster-card .price {
-  font-size: 0.8rem;
-  color: var(--white);
-  margin-bottom: 0.3rem;
-  font-weight: bold;
-}
-
 /* Роль игрока */
 .roster-card .role {
   font-size: 0.75rem; /* Размер текста */
@@ -294,7 +262,7 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 20;
 let currentPage = 1;
 let allTeams = [];
 
@@ -471,15 +439,13 @@ function renderPage(page) {
     tbody.appendChild(row);
   }
   // Обработчики кнопок ROSTER
-    document.querySelectorAll('.show-lineup').forEach(btn => {
-      btn.onclick = async function(e) {
-        e.stopPropagation();
-        const teamId = this.dataset.teamId;
-        const tourLabel = this.dataset.tour;
-        const tourId = tourLabel.includes("-") ? parseInt(tourLabel.split("-")[0]) : tourLabel === "Финалы" ? 99 : parseInt(tourLabel);
-        await showRoster(teamId, tourId);
-      };
+  document.querySelectorAll('.show-lineup').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const teamId = e.target.dataset.teamId;
+      const tour = e.target.dataset.tour;
+      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour == "Финалы" ? 99 : parseInt(tour));
     });
+  });
 }
 function renderPagination() {
   const paginationEl = document.getElementById('pagination');
@@ -523,7 +489,7 @@ function renderPagination() {
   paginationEl.appendChild(nextButton);
 }
 async function renderTeamHistory(teamId) {
-  if (!teamId) return;
+  if (!ensureSupabase() || !teamId) return;
   try {
     const { data, error } = await supabase
       .from("team_players")
@@ -569,21 +535,11 @@ async function renderTeamHistory(teamId) {
     console.error("Ошибка загрузки истории состава:", err);
   }
 }
-async function showRoster(teamId, currentTour=1) {
+async function showRoster(teamId, currentTour=1){
   try {
-    const panel = document.getElementById('roster-panel');
-    // Если панель уже открыта для этой команды и тура — скрываем её
-    if (!panel.classList.contains('hidden') && panel.dataset.currentTeamId === teamId && panel.dataset.currentTour === currentTour) {
-      panel.classList.add('hidden');
-      return;
-    }
-    // Сохраняем текущие teamId и tour в дата-атрибуты панели
-    panel.dataset.currentTeamId = teamId;
-    panel.dataset.currentTour = currentTour;
-
     const { data: teamPlayers } = await supabase
       .from('team_players')
-      .select('player_id, role_id (id, name, formula), price')
+      .select('player_id, role_id (id, name, formula)')
       .eq('team_id', teamId)
       .eq('tour_id', currentTour);
     if(!teamPlayers) return;
@@ -619,16 +575,13 @@ async function showRoster(teamId, currentTour=1) {
       }
       const card=document.createElement('div');
       card.className='roster-card';
-        card.innerHTML=`
-          <div class="player-photo-container">
-            <img src="${player.photo_url||'image/ball.svg'}" alt="">
-            <div class="price-badge">${p.price || 0}</div>
-          </div>
-          <div class="role">${p.role_id?.name || 'Без роли'}</div>
-          <div class="name">${player.first_name} ${player.last_name}</div>
-          <div class="club">${player.country}</div>
-          <div class="points">Очки: ${Math.round(points)}</div>
-        `;
+      card.innerHTML=`
+        <img src="${player.photo_url||'image/ball.svg'}" alt="">
+        <div class="name">${player.first_name} ${player.last_name}</div>
+        <div class="role">${p.role_id?.name || 'Без роли'}</div>
+        <div class="points">Очки: ${Math.round(points)}</div>
+        <div class="club">${player.country}</div>
+      `;
       list.appendChild(card);
     });
     panel.classList.remove('hidden');
@@ -642,6 +595,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
-
-
-
