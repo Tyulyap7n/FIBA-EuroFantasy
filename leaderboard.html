@@ -291,29 +291,17 @@ async function calculateTeamPoints(teamId, currentTour = 1) {
 
 async function loadLeaderboard() {
   try {
-    // 1. Загружаем данные из leaderboard_cache
-    const { data: playerStats, error: statsError } = await supabase
-      .from('leaderboard_cache')
-      .select('*');
-
-    if (statsError) throw statsError;
-
-    // 2. Загружаем список команд
+    // 1. Загружаем список команд
     const { data: teams, error: teamsError } = await supabase
       .from('user_teams')
       .select('id, team_name');
 
     if (teamsError) throw teamsError;
 
-    // 3. Загружаем роли игроков
-    const { data: teamPlayers, error: teamPlayersError } = await supabase
-      .from('team_players')
-      .select('player_id, team_id, tour_id, role_id(formula)');
-
-    if (teamPlayersError) throw teamPlayersError;
-
-    // 4. Агрегируем очки по командам с учётом формулы роли
+    // 2. Создаем объект для хранения очков команд
     const teamPoints = {};
+
+    // 3. Инициализируем данные для каждой команды
     teams.forEach(team => {
       teamPoints[team.id] = {
         name: team.team_name,
@@ -329,64 +317,86 @@ async function loadLeaderboard() {
       };
     });
 
-    // 5. Рассчитываем очки для каждого игрока с учётом роли
-    for (const teamId in teamPoints) {
-      const team = teamPoints[teamId];
-      const playersInTeam = teamPlayers.filter(tp => tp.team_id === Number(teamId));
+    // 4. Загружаем данные из leaderboard_cache и агрегируем очки по командам
+    const { data: playerStats, error: statsError } = await supabase
+      .from('leaderboard_cache')
+      .select('*');
+
+    if (statsError) throw statsError;
+
+    // 5. Загружаем данные о составе команд
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
+      .from('team_players')
+      .select('team_id, player_id, tour_id, role_id');
+
+    if (teamPlayersError) throw teamPlayersError;
+
+    // 6. Рассчитываем очки для каждой команды
+    for (const team of teams) {
+      const teamId = team.id;
+      const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
 
       for (const player of playersInTeam) {
         const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
         if (!stat) continue;
 
-        // Применяем формулу роли
-        const formula = player.role_id?.formula;
-        if (!formula) continue;
+        // Используем функцию calculateTeamPoints или аналогичную логику для расчета очков
+        const points = stat.points; // или используйте вашу логику расчета очков
 
-        try {
-          const context = { ...stat };
-          const fn = new Function(...Object.keys(context), `return (${formula});`);
-          const playerPoints = fn(...Object.values(context)) || 0;
-
-          // Добавляем очки игрока в соответствующий тур
-          switch (player.tour_id) {
-            case 1:
-              team.tour_1 += playerPoints;
-              break;
-            case 2:
-            case 3:
-              team.tour_2_3 += playerPoints;
-              break;
-            case 4:
-              team.tour_4 += playerPoints;
-              break;
-            case 5:
-              team.tour_5 += playerPoints;
-              break;
-            case 6:
-              team.tour_6 += playerPoints;
-              break;
-            case 7:
-              team.tour_7 += playerPoints;
-              break;
-            case 8:
-              team.tour_8 += playerPoints;
-              break;
-            case 99:
-              team.tour_finals += playerPoints;
-              break;
-          }
-        } catch (e) {
-          console.error('Ошибка расчёта очков:', e);
+        // Добавляем очки игрока в соответствующий тур
+        switch (player.tour_id) {
+          case 1:
+            teamPoints[teamId].tour_1 += points;
+            break;
+          case 2:
+            teamPoints[teamId].tour_2_3 += points;
+            break;
+          case 3:
+            teamPoints[teamId].tour_2_3 += points;
+            break;
+          case 4:
+            teamPoints[teamId].tour_4 += points;
+            break;
+          case 5:
+            teamPoints[teamId].tour_5 += points;
+            break;
+          case 6:
+            teamPoints[teamId].tour_6 += points;
+            break;
+          case 7:
+            teamPoints[teamId].tour_7 += points;
+            break;
+          case 8:
+            teamPoints[teamId].tour_8 += points;
+            break;
+          case 99:
+            teamPoints[teamId].tour_finals += points;
+            break;
         }
       }
+
+      // Рассчитываем итоговые очки
+      teamPoints[teamId].total =
+        teamPoints[teamId].tour_1 +
+        teamPoints[teamId].tour_2_3 +
+        teamPoints[teamId].tour_4 +
+        teamPoints[teamId].tour_5 +
+        teamPoints[teamId].tour_6 +
+        teamPoints[teamId].tour_7 +
+        teamPoints[teamId].tour_8 +
+        teamPoints[teamId].tour_finals;
     }
 
-    // 6. Заполняем таблицу лидерборда
+    // 7. Сортируем команды по убыванию итоговых очков
+    const sortedTeams = Object.entries(teamPoints)
+      .map(([teamId, data]) => ({ teamId, ...data }))
+      .sort((a, b) => b.total - a.total);
+
+    // 8. Заполняем таблицу лидерборда
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
 
-    for (const teamId in teamPoints) {
-      const team = teamPoints[teamId];
+    for (const team of sortedTeams) {
       const row = document.createElement('tr');
       row.innerHTML = `<td>${team.name}</td>`;
 
@@ -407,13 +417,13 @@ async function loadLeaderboard() {
         const points = team[tour.key];
         totalSum += points;
         const cell = document.createElement('td');
-        cell.innerHTML = `${Math.round(points)} <button class="show-lineup" data-team-id="${teamId}" data-tour="${tour.label}">ROSTER</button>`;
+        cell.innerHTML = `${Math.round(points)} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="${tour.label}">ROSTER</button>`;
         row.appendChild(cell);
       });
 
       // Итоговые очки
       const totalCell = document.createElement('td');
-      totalCell.innerText = Math.round(totalSum);
+      totalCell.innerText = Math.round(team.total);
       row.appendChild(totalCell);
 
       tbody.appendChild(row);
@@ -570,6 +580,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
