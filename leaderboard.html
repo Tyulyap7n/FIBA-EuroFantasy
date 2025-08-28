@@ -266,45 +266,85 @@ const ITEMS_PER_PAGE = 15;
 let currentPage = 1;
 let allTeams = [];
 
-async function calculateTeamPoints(teamId, currentTour = 1) {
+// Функция для расчета очков команды за тур (аналогично showRoster)
+async function calculateTourPoints(teamId, tourId) {
   try {
-  const { data: teamPlayers } = await supabase
-    .from('team_players')
-    .select('player_id, role_id (formula)')
-    .eq('team_id', teamId)
-    .eq('tour_id', currentTour);
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (formula)')
+      .eq('team_id', teamId)
+      .eq('tour_id', tourId);
 
     if (!teamPlayers || teamPlayers.length === 0) return 0;
 
     const playerIds = teamPlayers.map(p => p.player_id);
-    const { data: statsData } = await supabase
-      .from('player_stats')
-      .select('*')
-      .in('player_id', playerIds)
-      .eq('tour', currentTour);
+    
+    // Для тура 2-3 загружаем данные за оба тура
+    let toursToLoad = [tourId];
+    if (tourId === 2 || tourId === 3) {
+      toursToLoad = [2, 3];
+    }
+
+    const statsPromises = toursToLoad.map(tour =>
+      supabase
+        .from('player_stats')
+        .select('*')
+        .in('player_id', playerIds)
+        .eq('tour', tour)
+    );
+
+    const statsResults = await Promise.all(statsPromises);
+    const statsData = statsResults.flatMap(result => result.data || []);
 
     const statsMap = {};
-    (statsData||[]).forEach(s => statsMap[s.player_id]=s);
-
-    let total=0;
-    teamPlayers.forEach(p=>{
-      const stats=statsMap[p.player_id]||{};
-      const formula=p.role_id?.formula;
-      if (!formula) return;
-
-      const context = { ...stats, count: stats.count||1 };
-      try{
-        const fn=new Function(...Object.keys(context),`return (${formula});`);
-        total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-      }catch(e){console.error('Ошибка формулы:', formula, e);}
+    statsData.forEach(s => {
+      if (!statsMap[s.player_id]) {
+        statsMap[s.player_id] = {};
+      }
+      statsMap[s.player_id][s.tour] = s;
     });
 
-    return Math.round(total);
-  } catch(e) {
-    console.error('Ошибка calculateTeamPoints:', e);
+    let totalPoints = 0;
+
+    teamPlayers.forEach(p => {
+      const formula = p.role_id?.formula;
+      if (!formula) return;
+
+      let playerPoints = 0;
+      
+      if (tourId === 2 || tourId === 3) {
+        // Суммируем очки за тур 2 и тур 3
+        [2, 3].forEach(tour => {
+          const stats = statsMap[p.player_id]?.[tour] || {};
+          const context = { ...stats, count: stats.count || 1 };
+          try {
+            const fn = new Function(...Object.keys(context), `return (${formula});`);
+            playerPoints += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+          } catch (e) {
+            console.error('Ошибка расчёта очков игрока', e);
+          }
+        });
+      } else {
+        const stats = statsMap[p.player_id]?.[tourId] || {};
+        const context = { ...stats, count: stats.count || 1 };
+        try {
+          const fn = new Function(...Object.keys(context), `return (${formula});`);
+          playerPoints = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+        } catch (e) {
+          console.error('Ошибка расчёта очков игрока', e);
+        }
+      }
+
+      totalPoints += playerPoints;
+    });
+
+    return totalPoints;
+  } catch (e) {
+    console.error('Ошибка calculateTourPoints:', e);
     return 0;
   }
 }
+
 async function loadLeaderboard() {
   try {
     // 1. Загружаем список команд
@@ -313,135 +353,26 @@ async function loadLeaderboard() {
       .select('id, team_name');
     if (teamsError) throw teamsError;
 
-    // 2. Создаем объект для хранения очков команд
-    const teamPoints = {};
-
-    // 3. Инициализируем данные для каждой команды
-    teams.forEach(team => {
-      teamPoints[team.id] = {
-        name: team.team_name,
-        tour_1: 0,
-        tour_2_3: 0,
-        tour_4: 0,
-        tour_5: 0,
-        tour_6: 0,
-        tour_7: 0,
-        tour_8: 0,
-        tour_finals: 0,
-        total: 0,
-      };
-    });
-
-    // 4. Загружаем данные о составе команд
-    const { data: teamPlayers, error: teamPlayersError } = await supabase
-      .from('team_players')
-      .select('team_id, player_id, tour_id, role_id (formula)');
-    if (teamPlayersError) throw teamPlayersError;
-
-    // 5. Загружаем данные статистики игроков
-    const { data: playerStats, error: statsError } = await supabase
-      .from('player_stats')
-      .select('*');
-    if (statsError) throw statsError;
-
-    // 6. Рассчитываем очки для каждой команды
+    // 2. Рассчитываем очки для каждой команды
+    allTeams = [];
+    
     for (const team of teams) {
       const teamId = team.id;
-      const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
-
-      // Объект для хранения очков каждого игрока по турам
-      const playerTourPoints = {};
-
-      for (const player of playersInTeam) {
-        const stats = playerStats.filter(s => s.player_id === player.player_id && s.tour === player.tour_id);
-        if (!stats.length) continue;
-
-        const stat = stats[0];
-        const formula = player.role_id?.formula;
-        if (!formula) continue;
-
-        let points = 0;
-        const context = { ...stat, count: stat.count || 1 };
-
-        try {
-          const fn = new Function(...Object.keys(context), `return (${formula});`);
-          points = fn(...Object.values(context));
-          if (isNaN(points)) points = 0;
-        } catch (e) {
-          console.error('Ошибка расчёта очков игрока:', e);
-          points = 0;
-        }
-
-        // Если игрока ещё нет в объекте, добавляем его
-        if (!playerTourPoints[player.player_id]) {
-          playerTourPoints[player.player_id] = {
-            tour_1: 0,
-            tour_2: 0,
-            tour_3: 0,
-            tour_4: 0,
-            tour_5: 0,
-            tour_6: 0,
-            tour_7: 0,
-            tour_8: 0,
-            tour_finals: 0,
-          };
-        }
-
-        // Добавляем очки игрока в соответствующий тур
-        switch (player.tour_id) {
-          case 1:
-            playerTourPoints[player.player_id].tour_1 = points;
-            break;
-          case 2:
-            playerTourPoints[player.player_id].tour_2 = points;
-            break;
-          case 3:
-            playerTourPoints[player.player_id].tour_3 = points;
-            break;
-          case 4:
-            playerTourPoints[player.player_id].tour_4 = points;
-            break;
-          case 5:
-            playerTourPoints[player.player_id].tour_5 = points;
-            break;
-          case 6:
-            playerTourPoints[player.player_id].tour_6 = points;
-            break;
-          case 7:
-            playerTourPoints[player.player_id].tour_7 = points;
-            break;
-          case 8:
-            playerTourPoints[player.player_id].tour_8 = points;
-            break;
-          case 99:
-            playerTourPoints[player.player_id].tour_finals = points;
-            break;
-        }
-      }
-
-      // Суммируем очки всех игроков команды по турам
-      let tour_1 = 0;
-      let tour_2_3 = 0; // Сумма очков за тур 2 и тур 3
-      let tour_4 = 0;
-      let tour_5 = 0;
-      let tour_6 = 0;
-      let tour_7 = 0;
-      let tour_8 = 0;
-      let tour_finals = 0;
-
-      Object.values(playerTourPoints).forEach(playerPoints => {
-        tour_1 += playerPoints.tour_1;
-        tour_2_3 += playerPoints.tour_2 + playerPoints.tour_3; // Сумма очков за тур 2 и тур 3
-        tour_4 += playerPoints.tour_4;
-        tour_5 += playerPoints.tour_5;
-        tour_6 += playerPoints.tour_6;
-        tour_7 += playerPoints.tour_7;
-        tour_8 += playerPoints.tour_8;
-        tour_finals += playerPoints.tour_finals;
-      });
-
-      // Записываем очки команды
-      teamPoints[teamId] = {
+      
+      // Рассчитываем очки за каждый тур
+      const tour_1 = await calculateTourPoints(teamId, 1);
+      const tour_2_3 = await calculateTourPoints(teamId, 2); // Для тура 2-3 используем тур 2 как идентификатор
+      const tour_4 = await calculateTourPoints(teamId, 4);
+      const tour_5 = await calculateTourPoints(teamId, 5);
+      const tour_6 = await calculateTourPoints(teamId, 6);
+      const tour_7 = await calculateTourPoints(teamId, 7);
+      const tour_8 = await calculateTourPoints(teamId, 8);
+      const tour_finals = await calculateTourPoints(teamId, 99);
+      
+      const total = tour_1 + tour_2_3 + tour_4 + tour_5 + tour_6 + tour_7 + tour_8 + tour_finals;
+      
+      allTeams.push({
+        teamId: teamId,
         name: team.team_name,
         tour_1: Math.round(tour_1),
         tour_2_3: Math.round(tour_2_3),
@@ -451,25 +382,22 @@ async function loadLeaderboard() {
         tour_7: Math.round(tour_7),
         tour_8: Math.round(tour_8),
         tour_finals: Math.round(tour_finals),
-        total: Math.round(tour_1 + tour_2_3 + tour_4 + tour_5 + tour_6 + tour_7 + tour_8 + tour_finals),
-      };
+        total: Math.round(total)
+      });
     }
 
-    // 7. Сортируем команды по убыванию итоговых очков
-    allTeams = Object.entries(teamPoints)
-      .map(([teamId, data]) => ({ teamId, ...data }))
-      .sort((a, b) => b.total - a.total);
+    // 3. Сортируем команды по убыванию итоговых очков
+    allTeams.sort((a, b) => b.total - a.total);
 
-    // 8. Заполняем таблицу лидерборда (только текущая страница)
+    // 4. Заполняем таблицу лидерборда (только текущая страница)
     renderPage(currentPage);
 
-    // 9. Рендерим пагинацию
+    // 5. Рендерим пагинацию
     renderPagination();
   } catch (e) {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
-
 
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
@@ -566,62 +494,6 @@ function renderPagination() {
     }
   });
   paginationEl.appendChild(nextButton);
-}
-
-async function renderTeamHistory(teamId) {
-  if (!ensureSupabase() || !teamId) return;
-
-  try {
-    const { data, error } = await supabase
-      .from("team_players")
-      .select("tour_id, player_id, players(name, photo)")
-      .eq("team_id", teamId)
-      .order("tour_id", { ascending: true });
-
-    if (error) throw error;
-
-    const historyEl = document.getElementById("team-history");
-    historyEl.innerHTML = "";
-
-    const groupedByTour = {};
-    data.forEach(p => {
-      if (!groupedByTour[p.tour_id]) groupedByTour[p.tour_id] = [];
-      groupedByTour[p.tour_id].push(p);
-    });
-
-    Object.keys(groupedByTour).forEach(tourId => {
-      const tourBlock = document.createElement("div");
-      tourBlock.className = "tour-block";
-
-      const tourTitle = document.createElement("h3");
-      tourTitle.textContent = getTourLabel(parseInt(tourId));
-      tourBlock.appendChild(tourTitle);
-
-      const playersList = document.createElement("div");
-      playersList.className = "players-list";
-
-      groupedByTour[tourId].forEach(p => {
-        const playerDiv = document.createElement("div");
-        playerDiv.className = "player-card";
-
-        const img = document.createElement("img");
-        img.src = p.players?.photo || DEFAULT_AVATAR;
-        img.alt = p.players?.name || "Player";
-
-        const name = document.createElement("span");
-        name.textContent = p.players?.name || "Неизвестный";
-
-        playerDiv.appendChild(img);
-        playerDiv.appendChild(name);
-        playersList.appendChild(playerDiv);
-      });
-
-      tourBlock.appendChild(playersList);
-      historyEl.appendChild(tourBlock);
-    });
-  } catch (err) {
-    console.error("Ошибка загрузки истории состава:", err);
-  }
 }
 
 async function showRoster(teamId, currentTour=1) {
@@ -728,19 +600,9 @@ async function showRoster(teamId, currentTour=1) {
   }
 }
 
-
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
 });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
