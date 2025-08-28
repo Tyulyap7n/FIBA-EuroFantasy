@@ -1,641 +1,657 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Leaderboard — EuroFantasy</title>
-  <link rel="shortcut icon" href="image/img.jpg" type="image/jpg">
-  <style>
-    :root {
-      --purple: #633EDC;
-      --orange: #FE641C;
-      --yellow: #FDE600;
-      --black: #1c1c1c;
-      --white: #ffffff;
-      --muted: #bfbfbf;
-      --panel-max-height: 1600px;
-    }
-
-    @font-face {
-      font-family: 'Petrov Sans';
-      src: url('/fonts/PetrovSans-Trial-Bold.otf') format('opentype');
-      font-weight: bold;
-      font-style: normal;
-      font-display: swap;
-    }
-
-    body {
-      margin: 0;
-      background: var(--black);
-      color: var(--white);
-      font-family: 'Petrov Sans', Inter, system-ui, sans-serif;
-      font-size: 20px;
-      line-height: 1.2;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    .site-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--purple);
-      padding: 10px 20px;
-      border-bottom: 4px solid var(--yellow);
-    }
-
-    .site-header img.logo {
-      height: 50px;
-      display: block;
-    }
-
-    .header-links {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .header-link {
-      color: var(--white);
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    .header-link:hover {
-      color: var(--yellow);
-    }
-
-    .cell-class {
-      color: black;
-    }
-
-    .show-lineup {
-      background-color: var(--yellow);
-      color: black;
-      border: none;
-      padding: 3px 6px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.7rem;
-      margin-left: 5px;
-    }
-
-    .show-lineup:hover {
-      opacity: 0.9;
-    }
-
-    .custom-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
-      background: var(--black);
-      border-bottom: 3px solid var(--white);
-    }
-
-    .leaderboard-page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-    }
-
-    .leaderboard-page h1 {
-      font-family: 'Petrov Sans', sans-serif;
-      font-size: 2.2rem;
-      margin-bottom: 1rem;
-      text-align: center;
-      color: var(--yellow);
-      letter-spacing: 1px;
-    }
-
-    .leaderboard-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--purple);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
-    }
-
-    .leaderboard-table thead {
-      background: var(--purple);
-    }
-
-    .leaderboard-table th,
-    .leaderboard-table td {
-      padding: 0.5rem 0.6rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--white);
-      white-space: nowrap;
-    }
-
-    .leaderboard-table th {
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-
-    .leaderboard-table tr:nth-child(even) {
-      background: #222;
-    }
-
-    .leaderboard-table tr:hover {
-      background: rgba(254, 100, 28, 0.15);
-      transition: 0.2s;
-    }
-
-    .leaderboard-table tr.me {
-      background: rgba(253, 230, 0, 0.25);
-      font-weight: bold;
-    }
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
-      gap: 5px;
-    }
-
-    .pagination button {
-      background: var(--purple);
-      color: var(--white);
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .pagination button:hover {
-      background: var(--yellow);
-      color: black;
-    }
-
-    .pagination button.active {
-      background: var(--orange);
-      color: black;
-    }
-
-    .roster-panel {
-      margin-top: 2rem;
-      background: var(--purple);
-      border-radius: 16px;
-      padding: 1.5rem;
-      max-height: var(--panel-max-height);
-      overflow-y: auto;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
-      display: none;
-    }
-
-    .roster-panel h2 {
-      color: var(--orange);
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-    }
-
-    .roster-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 1rem;
-    }
-
-    .roster-card {
-      background: var(--purple);
-      border-radius: 12px;
-      padding: 0.8rem;
-      text-align: center;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
-    }
-
-    .roster-card img {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 0.5rem;
-    }
-
-    .roster-card .name {
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-bottom: 0.3rem;
-      color: var(--orange);
-    }
-
-    .roster-card .role {
-      font-size: 0.75rem;
-      color: var(--yellow);
-      margin-bottom: 0.3rem;
-      font-style: italic;
-    }
-
-    .roster-card .club {
-      font-size: 0.8rem;
-      color: var(--orange);
-    }
-
-    .roster-card .points {
-      font-size: 0.85rem;
-      color: var(--orange);
-      margin-bottom: 0.3rem;
-    }
-
-    a img {
-      height: 50px;
-      width: auto;
-      display: block;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: var(--yellow);
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Leaderboard — EuroFantasy</title>
+    <link rel="shortcut icon" href="image/img.jpg" type="image/jpg">
+<style>
+/* === LEADERBOARD PAGE === */
+:root{
+  --purple: #633EDC;
+  --orange: #FE641C;
+  --yellow: #FDE600;
+  --black: #1c1c1c;
+  --white: #ffffff;
+  --muted: #bfbfbf;
+  --panel-max-height: 1600px;
+}
+@font-face {
+  font-family: 'Petrov Sans';
+  src: url('/fonts/PetrovSans-Trial-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+  body{
+  margin: 0;
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Petrov Sans', Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+  .site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--purple);
+  padding: 10px 20px;
+  border-bottom: 4px solid var(--yellow);
+}
+.site-header img.logo { height: 50px; display:block; }
+.header-links { display:flex; gap:20px; align-items:center; }
+.header-link { color: var(--white); text-decoration: none; font-weight: 700; }
+.header-link:hover { color: var(--yellow); }
+/* Черный цвет текста в ячейке */
+.cell-class {
+  color: black;
+}
+.show-lineup {
+  background-color: var(--yellow);
+  color: black; /* Текст кнопки */
+  border: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.7rem;
+  margin-left: 5px;
+}
+.show-lineup:hover {
+  opacity: 0.9;
+}
+/* Alternative/custom header usage */
+.custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--black);
+  border-bottom: 3px solid var(--white);
+}
+/* Основной контейнер страницы лидерборда */
+.leaderboard-page {
+  max-width: 1200px; /* Ограничиваем максимальную ширину страницы */
+  margin: 0 auto; /* Центрируем блок по горизонтали */
+  padding: 2rem 1rem; /* Отступы сверху/снизу 2rem, слева/справа 1rem */
+}
+/* Заголовок страницы */
+.leaderboard-page h1 {
+  font-family: 'Petrov Sans', sans-serif; /* Шрифт заголовка */
+  font-size: 2.2rem; /* Размер текста заголовка */
+  margin-bottom: 1rem; /* Отступ снизу от заголовка */
+  text-align: center; /* Выравнивание по центру */
+  color: var(--yellow); /* Цвет текста из переменной CSS */
+  letter-spacing: 1px; /* Расстояние между буквами */
+}
+/* Таблица лидерборда */
+.leaderboard-table {
+  width: 100%; /* Занимает всю ширину контейнера */
+  border-collapse: collapse; /* Убирает двойные границы между ячейками */
+  background: var(--purple); /* Цвет фона таблицы */
+  border-radius: 16px; /* Скругление углов таблицы */
+  overflow: hidden; /* Чтобы скругление работало с содержимым */
+  box-shadow: 0 0 25px rgba(0,0,0,0.5); /* Тень вокруг таблицы для объёма */
+}
+/* Шапка таблицы */
+.leaderboard-table thead {
+  background: var(--purple); /* Фон шапки таблицы */
+}
+/* Ячейки таблицы (и заголовки, и данные) */
+.leaderboard-table th, .leaderboard-table td {
+  padding: 0.5rem 0.6rem; /* Внутренние отступы */
+  text-align: center; /* Выравнивание текста по центру */
+  font-size: 0.8rem; /* Размер текста */
+  color: var(--white); /* Цвет текста */
+  white-space: nowrap; /* Запрет переноса */
+}
+/* Только заголовки таблицы */
+.leaderboard-table th {
+  font-weight: bold; /* Жирный шрифт */
+  text-transform: uppercase; /* Преобразование текста в верхний регистр */
+}
+/* Чередование строк таблицы */
+.leaderboard-table tr:nth-child(even) {
+  background: #222; /* Тёмный фон для чётных строк */
+}
+/* Эффект при наведении на строку */
+.leaderboard-table tr:hover {
+  background: rgba(254,100,28,0.15); /* Полупрозрачный оранжевый фон */
+  transition: 0.2s; /* Плавное изменение фона */
+}
+/* Подсветка строки для "моей" команды */
+.leaderboard-table tr.me {
+  background: rgba(253,230,0,0.25); /* Полупрозрачный жёлтый фон */
+  font-weight: bold; /* Жирный текст */
+}
+/* Пагинация */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 5px;
+}
+.pagination button {
+  background: var(--purple);
+  color: var(--white);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.pagination button:hover {
+  background: var(--yellow);
+  color: black;
+}
+.pagination button.active {
+  background: var(--orange);
+  color: black;
+}
+/* Панель состава команды */
+.roster-panel {
+  margin-top: 2rem; /* Отступ сверху от таблицы */
+  background: var(--purple); /* Тёмный фон панели */
+  border-radius: 16px; /* Скругление углов */
+  padding: 1.5rem; /* Внутренние отступы */
+  max-height: var(--panel-max-height); /* Максимальная высота панели */
+  overflow-y: auto; /* Прокрутка по вертикали при переполнении */
+  box-shadow: 0 0 15px rgba(0,0,0,0.4); /* Тень панели для объёма */
+}
+/* Заголовок панели состава */
+.roster-panel h2 {
+  color: var(--orange); /* Оранжевый цвет заголовка */
+  font-size: 1.6rem; /* Размер текста */
+  margin-bottom: 1rem; /* Отступ снизу */
+}
+/* Сетка карточек игроков */
+.roster-list {
+  display: grid; /* Используем grid для сетки */
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Автоматическое распределение колонок */
+  gap: 1rem; /* Расстояние между карточками */
+}
+/* Карточка игрока */
+.roster-card {
+  background: var(--purple);  /* Тёмный фон */
+  border-radius: 12px; /* Скругление углов */
+  padding: 0.8rem; /* Внутренние отступы */
+  text-align: center; /* Выравнивание содержимого по центру */
+  box-shadow: 0 0 8px rgba(0,0,0,0.4); /* Тень карточки */
+}
+/* Фото игрока */
+.roster-card img {
+  width: 64px; /* Ширина */
+  height: 64px; /* Высота */
+  border-radius: 50%; /* Круглая форма */
+  object-fit: cover; /* Обрезка по размеру */
+  margin-bottom: 0.5rem; /* Отступ снизу */
+}
+/* Имя игрока */
+.roster-card .name {
+  font-size: 0.9rem; /* Размер текста */
+  font-weight: bold; /* Жирный шрифт */
+  margin-bottom: 0.3rem; /* Отступ снизу */
+  color: var(--orange); /* Цвет текста */
+}
+/* Роль игрока */
+.roster-card .role {
+  font-size: 0.75rem; /* Размер текста */
+  color: var(--yellow); /* Цвет текста */
+  margin-bottom: 0.3rem; /* Отступ снизу */
+  font-style: italic;
+}
+/* Клуб/страна игрока */
+.roster-card .club {
+  font-size: 0.8rem; /* Размер текста */
+  color: var(--orange); /* Цвет текста */
+}
+/* Очки игрока */
+.roster-card .points {
+  font-size: 0.85rem; /* Размер текста */
+  color: var(--orange);  /* Цвет жёлтый, выделяем */
+  margin-bottom: 0.3rem; /* Отступ снизу */
+}
+a img {
+  height: 50px;
+  width: auto;
+  display: block; /* чтобы убрать возможные отступы под изображением */
+}
+.hidden { display: none; }
+</style>
 </head>
-
+  <script src="script.js"></script>
 <body>
   <header class="site-header">
-    <div class="logo-container">
-      <a href="dashboard.html">
-        <img src="image/logo.jpg" alt="logo">
-      </a>
-    </div>
-  </header>
-
-  <div class="leaderboard-page">
-    <h1>LEADERBOARD</h1>
-    <div id="loading" class="loading">Загрузка данных...</div>
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Place</th>
-          <th>TEAM</th>
-          <th>TOUR 1</th>
-          <th>TOUR 2-3</th>
-          <th>TOUR 4</th>
-          <th>TOUR 5</th>
-          <th>1/8</th>
-          <th>1/4</th>
-          <th>1/2</th>
-          <th>FINALS</th>
-          <th>SUMMARY</th>
-        </tr>
-      </thead>
-      <tbody id="leaderboard-body"></tbody>
-    </table>
-    <div class="pagination" id="pagination"></div>
-    <div class="roster-panel" id="roster-panel">
-      <h2>TEAM ROSTER</h2>
-      <div class="roster-list" id="roster-list"></div>
-      <div id="team-history"></div>
-    </div>
+  <div class="logo-container">
+    <a href="dashboard.html"> <img src="image/logo.jpg" alt="logo"></a>
   </div>
+</header>
+<div class="leaderboard-page">
+  <h1>LEADERBOARD</h1>
+  <table class="leaderboard-table">
+    <thead>
+      <tr>
+        <th>Place</th>
+        <th>TEAM</th>
+        <th>TOUR 1</th>
+        <th>TOUR 2-3</th>
+        <th>TOUR 4</th>
+        <th>TOUR 5</th>
+        <th>1/8</th>
+        <th>1/4</th>
+        <th>1/2</th>
+        <th>FINALS</th>
+        <th>SUMMARY</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body"></tbody>
+  </table>
+  <div class="pagination" id="pagination"></div>
+  <div class="roster-panel hidden" id="roster-panel">
+    <h2>TEAM ROSTER</h2>
+    <div class="roster-list" id="roster-list"></div>
+    <div id="team-history"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+const supabase = window.supabase.createClient(
+  "https://xovxokupvsnnjtskdgvr.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
+);
+const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
+const ITEMS_PER_PAGE = 15;
+let currentPage = 1;
+let allTeams = [];
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Инициализация Supabase клиента
-    const supabaseUrl = "https://xovxokupvsnnjtskdgvr.supabase.co";
-    const supabaseKey = "YOUR_SUPABASE_ANON_KEY"; // Замените на реальный ключ или используйте бэкенд-прокси
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+async function calculateTeamPoints(teamId, currentTour = 1) {
+  try {
+  const { data: teamPlayers } = await supabase
+    .from('team_players')
+    .select('player_id, role_id (formula)')
+    .eq('team_id', teamId)
+    .eq('tour_id', currentTour);
 
-    // Константы
-    const TOURS = ["1", "2-3", "4", "5", "1/8", "1/4", "1/2", "Финалы"];
-    const ITEMS_PER_PAGE = 15;
-    let currentPage = 1;
-    let allTeams = [];
+    if (!teamPlayers || teamPlayers.length === 0) return 0;
 
-    // Функция для отображения индикатора загрузки
-    function showLoading(isLoading) {
-      const loadingElement = document.getElementById("loading");
-      loadingElement.style.display = isLoading ? "block" : "none";
-    }
+    const playerIds = teamPlayers.map(p => p.player_id);
+    const { data: statsData } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', currentTour);
 
-    // Расчёт очков команды
-    async function calculateTeamPoints(teamId, currentTour = 1) {
-      try {
-        const { data: teamPlayers } = await supabase
-          .from("team_players")
-          .select("player_id, role_id (formula)")
-          .eq("team_id", teamId)
-          .eq("tour_id", currentTour);
+    const statsMap = {};
+    (statsData||[]).forEach(s => statsMap[s.player_id]=s);
 
-        if (!teamPlayers || teamPlayers.length === 0) return 0;
+    let total=0;
+    teamPlayers.forEach(p=>{
+      const stats=statsMap[p.player_id]||{};
+      const formula=p.role_id?.formula;
+      if (!formula) return;
 
-        const playerIds = teamPlayers.map((p) => p.player_id);
-        const { data: statsData } = await supabase
-          .from("player_stats")
-          .select("*")
-          .in("player_id", playerIds)
-          .eq("tour", currentTour);
-
-        const statsMap = {};
-        (statsData || []).forEach((s) => (statsMap[s.player_id] = s));
-
-        let total = 0;
-        teamPlayers.forEach((p) => {
-          const stats = statsMap[p.player_id] || {};
-          const formula = p.role_id?.formula;
-          if (!formula) return;
-
-          const context = { ...stats, count: stats.count || 1 };
-          try {
-            const fn = new Function(...Object.keys(context), `return (${formula});`);
-            total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-          } catch (e) {
-            console.error("Ошибка формулы:", formula, e);
-          }
-        });
-
-        return Math.round(total);
-      } catch (e) {
-        console.error("Ошибка calculateTeamPoints:", e);
-        return 0;
-      }
-    }
-
-    // Загрузка лидерборда
-    async function loadLeaderboard() {
-      showLoading(true);
-      try {
-        const { data: teams, error: teamsError } = await supabase
-          .from("user_teams")
-          .select("id, team_name");
-
-        if (teamsError) throw teamsError;
-
-        const teamPoints = {};
-        teams.forEach((team) => {
-          teamPoints[team.id] = {
-            name: team.team_name,
-            tour_1: 0,
-            tour_2_3: 0,
-            tour_4: 0,
-            tour_5: 0,
-            tour_6: 0,
-            tour_7: 0,
-            tour_8: 0,
-            tour_finals: 0,
-            total: 0,
-          };
-        });
-
-        const { data: playerStats, error: statsError } = await supabase
-          .from("leaderboard_cache")
-          .select("*");
-
-        if (statsError) throw statsError;
-
-        const { data: teamPlayers, error: teamPlayersError } = await supabase
-          .from("team_players")
-          .select("team_id, player_id, tour_id, role_id");
-
-        if (teamPlayersError) throw teamPlayersError;
-
-        for (const team of teams) {
-          const teamId = team.id;
-          const playersInTeam = teamPlayers.filter((tp) => tp.team_id === teamId);
-
-          for (const player of playersInTeam) {
-            const stat = playerStats.find(
-              (s) => s.player_id === player.player_id && s.tour_number === player.tour_id
-            );
-            if (!stat) continue;
-
-            const points = stat.points;
-            switch (player.tour_id) {
-              case 1:
-                teamPoints[teamId].tour_1 += points;
-                break;
-              case 2:
-                teamPoints[teamId].tour_2_3 += points;
-                break;
-              case 3:
-                teamPoints[teamId].tour_2_3 += points;
-                break;
-              case 4:
-                teamPoints[teamId].tour_4 += points;
-                break;
-              case 5:
-                teamPoints[teamId].tour_5 += points;
-                break;
-              case 6:
-                teamPoints[teamId].tour_6 += points;
-                break;
-              case 7:
-                teamPoints[teamId].tour_7 += points;
-                break;
-              case 8:
-                teamPoints[teamId].tour_8 += points;
-                break;
-              case 99:
-                teamPoints[teamId].tour_finals += points;
-                break;
-            }
-          }
-
-          teamPoints[teamId].total =
-            teamPoints[teamId].tour_1 +
-            teamPoints[teamId].tour_2_3 +
-            teamPoints[teamId].tour_4 +
-            teamPoints[teamId].tour_5 +
-            teamPoints[teamId].tour_6 +
-            teamPoints[teamId].tour_7 +
-            teamPoints[teamId].tour_8 +
-            teamPoints[teamId].tour_finals;
-        }
-
-        allTeams = Object.entries(teamPoints)
-          .map(([teamId, data]) => ({ teamId, ...data }))
-          .sort((a, b) => b.total - a.total);
-
-        renderPage(currentPage);
-        renderPagination();
-      } catch (e) {
-        console.error("Ошибка loadLeaderboard:", e);
-      } finally {
-        showLoading(false);
-      }
-    }
-
-    // Отображение страницы
-    function renderPage(page) {
-      const tbody = document.getElementById("leaderboard-body");
-      tbody.innerHTML = "";
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE;
-      const pageTeams = allTeams.slice(start, end);
-
-      for (let i = 0; i < pageTeams.length; i++) {
-        const team = pageTeams[i];
-        const row = document.createElement("tr");
-
-        const placeCell = document.createElement("td");
-        placeCell.innerText = start + i + 1;
-        row.appendChild(placeCell);
-
-        const nameCell = document.createElement("td");
-        nameCell.innerText = team.name;
-        row.appendChild(nameCell);
-
-        const tours = [
-          { key: "tour_1", label: "1" },
-          { key: "tour_2_3", label: "2-3" },
-          { key: "tour_4", label: "4" },
-          { key: "tour_5", label: "5" },
-          { key: "tour_6", label: "1/8" },
-          { key: "tour_7", label: "1/4" },
-          { key: "tour_8", label: "1/2" },
-          { key: "tour_finals", label: "Финалы" },
-        ];
-
-        tours.forEach((tour) => {
-          const points = team[tour.key];
-          const cell = document.createElement("td");
-          cell.innerHTML = `${Math.round(points)} <button class="show-lineup" data-team-id="${
-            team.teamId
-          }" data-tour="${tour.label}">ROSTER</button>`;
-          row.appendChild(cell);
-        });
-
-        const totalCell = document.createElement("td");
-        totalCell.innerText = Math.round(team.total);
-        row.appendChild(totalCell);
-
-        tbody.appendChild(row);
-      }
-
-      document.querySelectorAll(".show-lineup").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const teamId = e.target.dataset.teamId;
-          const tour = e.target.dataset.tour;
-          await showRoster(
-            teamId,
-            tour.includes("-") ? parseInt(tour.split("-")[0]) : tour === "Финалы" ? 99 : parseInt(tour)
-          );
-        });
-      });
-    }
-
-    // Пагинация
-    function renderPagination() {
-      const paginationEl = document.getElementById("pagination");
-      paginationEl.innerHTML = "";
-      const pageCount = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
-
-      const prevButton = document.createElement("button");
-      prevButton.textContent = "←";
-      prevButton.addEventListener("click", () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderPage(currentPage);
-          renderPagination();
-        }
-      });
-      paginationEl.appendChild(prevButton);
-
-      for (let i = 1; i <= pageCount; i++) {
-        const pageButton = document.createElement("button");
-        pageButton.textContent = i;
-        if (i === currentPage) {
-          pageButton.classList.add("active");
-        }
-        pageButton.addEventListener("click", () => {
-          currentPage = i;
-          renderPage(currentPage);
-          renderPagination();
-        });
-        paginationEl.appendChild(pageButton);
-      }
-
-      const nextButton = document.createElement("button");
-      nextButton.textContent = "→";
-      nextButton.addEventListener("click", () => {
-        if (currentPage < pageCount) {
-          currentPage++;
-          renderPage(currentPage);
-          renderPagination();
-        }
-      });
-      paginationEl.appendChild(nextButton);
-    }
-
-    // Отображение состава команды
-    async function showRoster(teamId, currentTour = 1) {
-      try {
-        const { data: teamPlayers } = await supabase
-          .from("team_players")
-          .select("player_id, role_id (id, name, formula)")
-          .eq("team_id", teamId)
-          .eq("tour_id", currentTour);
-
-        if (!teamPlayers) return;
-
-        const playerIds = teamPlayers.map((p) => p.player_id);
-        const { data: statsData } = await supabase
-          .from("player_stats")
-          .select("*")
-          .in("player_id", playerIds)
-          .eq("tour", currentTour);
-
-        const statsMap = {};
-        (statsData || []).forEach((s) => (statsMap[s.player_id] = s));
-
-        const { data: playersData } = await supabase
-          .from("players")
-          .select("*")
-          .in("id", playerIds);
-
-        const playersMap = {};
-        (playersData || []).forEach((p) => (playersMap[p.id] = p));
-
-        const panel = document.getElementById("roster-panel");
-        const list = document.getElementById("roster-list");
-        list.innerHTML = "";
-
-        teamPlayers.forEach((p) => {
-          const stats = statsMap[p.player_id] || {};
-          const formula = p.role_id?.formula;
-          const player = playersMap[p.player_id];
-          if (!player) return;
-
-          let points = 0;
-          if (formula) {
-            const context = { ...stats, count: stats.count || 1 };
-            try {
-              const fn = new Function(...Object.keys(context), `return (${formula});`);
-              points = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-            } catch (e) {
-              console.error("Ошибка расчёта очков игрока", player.first_name, player.last_name, e);
-            }
-          }
-
-          const card = document.createElement("div");
-          card.className = "roster-card";
-          card.innerHTML = `
-            <img src="${player.photo_url || "image/ball.svg"}" alt="">
-            <div class="role">${p.role_id?.name || "Без роли"}</div>
-            <div class="name">${player.first_name} ${player.last_name}</div>
-            <div class="club">${player.country}</div>
-            <div class="points">Очки: ${Math.round(points)}</div>
-          `;
-          list.appendChild(card);
-        });
-
-        panel.style.display = "block";
-      } catch (e) {
-        console.error("Ошибка showRoster:", e);
-      }
-    }
-
-    // Инициализация
-    document.addEventListener("DOMContentLoaded", async () => {
-      await loadLeaderboard();
+      const context = { ...stats, count: stats.count||1 };
+      try{
+        const fn=new Function(...Object.keys(context),`return (${formula});`);
+        total += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+      }catch(e){console.error('Ошибка формулы:', formula, e);}
     });
-  </script>
+
+    return Math.round(total);
+  } catch(e) {
+    console.error('Ошибка calculateTeamPoints:', e);
+    return 0;
+  }
+}
+
+async function loadLeaderboard() {
+  try {
+    // 1. Загружаем список команд
+    const { data: teams, error: teamsError } = await supabase
+      .from('user_teams')
+      .select('id, team_name');
+
+    if (teamsError) throw teamsError;
+
+    // 2. Создаем объект для хранения очков команд
+    const teamPoints = {};
+
+    // 3. Инициализируем данные для каждой команды
+    teams.forEach(team => {
+      teamPoints[team.id] = {
+        name: team.team_name,
+        tour_1: 0,
+        tour_2_3: 0,
+        tour_4: 0,
+        tour_5: 0,
+        tour_6: 0,
+        tour_7: 0,
+        tour_8: 0,
+        tour_finals: 0,
+        total: 0,
+      };
+    });
+
+    // 4. Загружаем данные из leaderboard_cache и агрегируем очки по командам
+    const { data: playerStats, error: statsError } = await supabase
+      .from('leaderboard_cache')
+      .select('*');
+
+    if (statsError) throw statsError;
+
+    // 5. Загружаем данные о составе команд
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
+      .from('team_players')
+      .select('team_id, player_id, tour_id, role_id');
+
+    if (teamPlayersError) throw teamPlayersError;
+
+    // 6. Рассчитываем очки для каждой команды
+    for (const team of teams) {
+      const teamId = team.id;
+      const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
+
+      for (const player of playersInTeam) {
+        const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
+        if (!stat) continue;
+
+        // Используем очки игрока
+        const points = stat.points;
+
+        // Добавляем очки игрока в соответствующий тур
+        switch (player.tour_id) {
+          case 1:
+            teamPoints[teamId].tour_1 += points;
+            break;
+          case 2:
+            teamPoints[teamId].tour_2_3 += points;
+            break;
+          case 3:
+            teamPoints[teamId].tour_2_3 += points;
+            break;
+          case 4:
+            teamPoints[teamId].tour_4 += points;
+            break;
+          case 5:
+            teamPoints[teamId].tour_5 += points;
+            break;
+          case 6:
+            teamPoints[teamId].tour_6 += points;
+            break;
+          case 7:
+            teamPoints[teamId].tour_7 += points;
+            break;
+          case 8:
+            teamPoints[teamId].tour_8 += points;
+            break;
+          case 99:
+            teamPoints[teamId].tour_finals += points;
+            break;
+        }
+      }
+
+      // Рассчитываем итоговые очки
+      teamPoints[teamId].total =
+        teamPoints[teamId].tour_1 +
+        teamPoints[teamId].tour_2_3 +
+        teamPoints[teamId].tour_4 +
+        teamPoints[teamId].tour_5 +
+        teamPoints[teamId].tour_6 +
+        teamPoints[teamId].tour_7 +
+        teamPoints[teamId].tour_8 +
+        teamPoints[teamId].tour_finals;
+    }
+
+    // 7. Сортируем команды по убыванию итоговых очков
+    allTeams = Object.entries(teamPoints)
+      .map(([teamId, data]) => ({ teamId, ...data }))
+      .sort((a, b) => b.total - a.total);
+
+    // 8. Заполняем таблицу лидерборда (только текущая страница)
+    renderPage(currentPage);
+
+    // 9. Рендерим пагинацию
+    renderPagination();
+  } catch (e) {
+    console.error('Ошибка loadLeaderboard:', e);
+  }
+}
+
+function renderPage(page) {
+  const tbody = document.getElementById('leaderboard-body');
+  tbody.innerHTML = '';
+
+  const start = (page - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageTeams = allTeams.slice(start, end);
+
+  for (let i = 0; i < pageTeams.length; i++) {
+    const team = pageTeams[i];
+    const row = document.createElement('tr');
+
+    // Добавляем столбец "Место"
+    const placeCell = document.createElement('td');
+    placeCell.innerText = start + i + 1;
+    row.appendChild(placeCell);
+
+    // Добавляем название команды
+    const nameCell = document.createElement('td');
+    nameCell.innerText = team.name;
+    row.appendChild(nameCell);
+
+    // Очки по турам
+    const tours = [
+      { key: 'tour_1', label: '1' },
+      { key: 'tour_2_3', label: '2-3' },
+      { key: 'tour_4', label: '4' },
+      { key: 'tour_5', label: '5' },
+      { key: 'tour_6', label: '1/8' },
+      { key: 'tour_7', label: '1/4' },
+      { key: 'tour_8', label: '1/2' },
+      { key: 'tour_finals', label: 'Финалы' },
+    ];
+
+    tours.forEach(tour => {
+      const points = team[tour.key];
+      const cell = document.createElement('td');
+      cell.innerHTML = `${Math.round(points)} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="${tour.label}">ROSTER</button>`;
+      row.appendChild(cell);
+    });
+
+    // Итоговые очки
+    const totalCell = document.createElement('td');
+    totalCell.innerText = Math.round(team.total);
+    row.appendChild(totalCell);
+
+    tbody.appendChild(row);
+  }
+
+  // Обработчики кнопок ROSTER
+  document.querySelectorAll('.show-lineup').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const teamId = e.target.dataset.teamId;
+      const tour = e.target.dataset.tour;
+      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour == "Финалы" ? 99 : parseInt(tour));
+    });
+  });
+}
+
+function renderPagination() {
+  const paginationEl = document.getElementById('pagination');
+  paginationEl.innerHTML = '';
+
+  const pageCount = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
+
+  // Кнопка "Назад"
+  const prevButton = document.createElement('button');
+  prevButton.textContent = '←';
+  prevButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage(currentPage);
+      renderPagination();
+    }
+  });
+  paginationEl.appendChild(prevButton);
+
+  // Кнопки номеров страниц
+  for (let i = 1; i <= pageCount; i++) {
+    const pageButton = document.createElement('button');
+    pageButton.textContent = i;
+    if (i === currentPage) {
+      pageButton.classList.add('active');
+    }
+    pageButton.addEventListener('click', () => {
+      currentPage = i;
+      renderPage(currentPage);
+      renderPagination();
+    });
+    paginationEl.appendChild(pageButton);
+  }
+
+  // Кнопка "Вперед"
+  const nextButton = document.createElement('button');
+  nextButton.textContent = '→';
+  nextButton.addEventListener('click', () => {
+    if (currentPage < pageCount) {
+      currentPage++;
+      renderPage(currentPage);
+      renderPagination();
+    }
+  });
+  paginationEl.appendChild(nextButton);
+}
+
+async function renderTeamHistory(teamId) {
+  if (!ensureSupabase() || !teamId) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("team_players")
+      .select("tour_id, player_id, players(name, photo)")
+      .eq("team_id", teamId)
+      .order("tour_id", { ascending: true });
+
+    if (error) throw error;
+
+    const historyEl = document.getElementById("team-history");
+    historyEl.innerHTML = "";
+
+    // группировка по турам
+    const groupedByTour = {};
+    data.forEach(p => {
+      if (!groupedByTour[p.tour_id]) groupedByTour[p.tour_id] = [];
+      groupedByTour[p.tour_id].push(p);
+    });
+
+    // рендер по каждому туру
+    Object.keys(groupedByTour).forEach(tourId => {
+      const tourBlock = document.createElement("div");
+      tourBlock.className = "tour-block";
+
+      // заголовок тура
+      const tourTitle = document.createElement("h3");
+      tourTitle.textContent = getTourLabel(parseInt(tourId));
+      tourBlock.appendChild(tourTitle);
+
+      // список игроков
+      const playersList = document.createElement("div");
+      playersList.className = "players-list";
+
+      groupedByTour[tourId].forEach(p => {
+        const playerDiv = document.createElement("div");
+        playerDiv.className = "player-card";
+
+        const img = document.createElement("img");
+        img.src = p.players?.photo || DEFAULT_AVATAR;
+        img.alt = p.players?.name || "Player";
+
+        const name = document.createElement("span");
+        name.textContent = p.players?.name || "Неизвестный";
+
+        playerDiv.appendChild(img);
+        playerDiv.appendChild(name);
+        playersList.appendChild(playerDiv);
+      });
+
+      tourBlock.appendChild(playersList);
+      historyEl.appendChild(tourBlock);
+    });
+  } catch (err) {
+    console.error("Ошибка загрузки истории состава:", err);
+  }
+}
+
+async function showRoster(teamId, currentTour=1) {
+  try {
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (id, name, formula)')
+      .eq('team_id', teamId)
+      .eq('tour_id', currentTour);
+
+    if(!teamPlayers) return;
+
+    const playerIds = teamPlayers.map(p=>p.player_id);
+    const { data: statsData } = await supabase
+      .from('player_stats')
+      .select('*')
+      .in('player_id', playerIds)
+      .eq('tour', currentTour);
+
+    const statsMap = {};
+    (statsData||[]).forEach(s=>statsMap[s.player_id]=s);
+
+    const { data: playersData } = await supabase
+      .from('players')
+      .select('*')
+      .in('id', playerIds);
+
+    const playersMap = {};
+    (playersData||[]).forEach(p=>playersMap[p.id]=p);
+
+    const panel = document.getElementById('roster-panel');
+    const list = document.getElementById('roster-list');
+    list.innerHTML='';
+
+    teamPlayers.forEach(p=>{
+      const stats=statsMap[p.player_id]||{};
+      const formula=p.role_id?.formula;
+      const player=playersMap[p.player_id];
+      if(!player) return;
+
+      let points=0;
+      if(formula){
+        const context = { ...stats, count: stats.count||1 };
+        try{
+          const fn=new Function(...Object.keys(context),`return (${formula});`);
+          points=isNaN(fn(...Object.values(context)))?0:fn(...Object.values(context));
+        }catch(e){console.error('Ошибка расчёта очков игрока',player.first_name,player.last_name,e);}
+      }
+
+      const card=document.createElement('div');
+      card.className='roster-card';
+      card.innerHTML=`
+        <img src="${player.photo_url||'image/ball.svg'}" alt="">
+        <div class="name">${player.first_name} ${player.last_name}</div>
+        <div class="role">${p.role_id?.name || 'Без роли'}</div>
+        <div class="points">Очки: ${Math.round(points)}</div>
+        <div class="club">${player.country}</div>
+      `;
+      list.appendChild(card);
+    });
+
+    panel.classList.remove('hidden');
+  } catch(e) {
+    console.error('Ошибка showRoster:', e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadLeaderboard();
+});
+</script>
 </body>
 </html>
