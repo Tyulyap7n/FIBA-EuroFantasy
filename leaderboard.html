@@ -342,57 +342,103 @@ async function loadLeaderboard() {
 
     if (teamPlayersError) throw teamPlayersError;
 
-    for (const team of teams) {
-      const teamId = team.id;
-      const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
+    // 6. Рассчитываем очки для каждой команды
+for (const team of teams) {
+  const teamId = team.id;
+  const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
 
-      for (const player of playersInTeam) {
-        const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
-        if (!stat) continue;
+  // Объект для хранения очков игроков по турам
+  const playerTourPoints = {};
 
-        const points = stat.points;
+  for (const player of playersInTeam) {
+    const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
+    if (!stat) continue;
 
-        switch (player.tour_id) {
-          case 1:
-            teamPoints[teamId].tour_1 += points;
-            break;
-          case 2:
-            teamPoints[teamId].tour_2_3 += points;
-            break;
-          case 3:
-            teamPoints[teamId].tour_2_3 += points;
-            break;
-          case 4:
-            teamPoints[teamId].tour_4 += points;
-            break;
-          case 5:
-            teamPoints[teamId].tour_5 += points;
-            break;
-          case 6:
-            teamPoints[teamId].tour_6 += points;
-            break;
-          case 7:
-            teamPoints[teamId].tour_7 += points;
-            break;
-          case 8:
-            teamPoints[teamId].tour_8 += points;
-            break;
-          case 99:
-            teamPoints[teamId].tour_finals += points;
-            break;
-        }
-      }
+    const points = stat.points;
 
-      teamPoints[teamId].total =
-        teamPoints[teamId].tour_1 +
-        teamPoints[teamId].tour_2_3 +
-        teamPoints[teamId].tour_4 +
-        teamPoints[teamId].tour_5 +
-        teamPoints[teamId].tour_6 +
-        teamPoints[teamId].tour_7 +
-        teamPoints[teamId].tour_8 +
-        teamPoints[teamId].tour_finals;
+    // Если игрок уже есть в объекте, добавляем очки, иначе создаём запись
+    if (!playerTourPoints[player.player_id]) {
+      playerTourPoints[player.player_id] = {
+        tour_1: 0,
+        tour_2: 0,
+        tour_3: 0,
+        tour_4: 0,
+        tour_5: 0,
+        tour_6: 0,
+        tour_7: 0,
+        tour_8: 0,
+        tour_finals: 0,
+      };
     }
+
+    // Добавляем очки игрока в соответствующий тур
+    switch (player.tour_id) {
+      case 1:
+        playerTourPoints[player.player_id].tour_1 += points;
+        break;
+      case 2:
+        playerTourPoints[player.player_id].tour_2 += points;
+        break;
+      case 3:
+        playerTourPoints[player.player_id].tour_3 += points;
+        break;
+      case 4:
+        playerTourPoints[player.player_id].tour_4 += points;
+        break;
+      case 5:
+        playerTourPoints[player.player_id].tour_5 += points;
+        break;
+      case 6:
+        playerTourPoints[player.player_id].tour_6 += points;
+        break;
+      case 7:
+        playerTourPoints[player.player_id].tour_7 += points;
+        break;
+      case 8:
+        playerTourPoints[player.player_id].tour_8 += points;
+        break;
+      case 99:
+        playerTourPoints[player.player_id].tour_finals += points;
+        break;
+    }
+  }
+
+  // Суммируем очки всех игроков команды по турам
+  let tour_1 = 0;
+  let tour_2_3 = 0; // Сумма очков за тур 2 и тур 3
+  let tour_4 = 0;
+  let tour_5 = 0;
+  let tour_6 = 0;
+  let tour_7 = 0;
+  let tour_8 = 0;
+  let tour_finals = 0;
+
+  Object.values(playerTourPoints).forEach(playerPoints => {
+    tour_1 += playerPoints.tour_1;
+    tour_2_3 += playerPoints.tour_2 + playerPoints.tour_3; // Сумма очков за тур 2 и тур 3
+    tour_4 += playerPoints.tour_4;
+    tour_5 += playerPoints.tour_5;
+    tour_6 += playerPoints.tour_6;
+    tour_7 += playerPoints.tour_7;
+    tour_8 += playerPoints.tour_8;
+    tour_finals += playerPoints.tour_finals;
+  });
+
+  // Записываем очки команды
+  teamPoints[teamId] = {
+    name: team.team_name,
+    tour_1,
+    tour_2_3,
+    tour_4,
+    tour_5,
+    tour_6,
+    tour_7,
+    tour_8,
+    tour_finals,
+    total: tour_1 + tour_2_3 + tour_4 + tour_5 + tour_6 + tour_7 + tour_8 + tour_finals,
+  };
+}
+
 
     allTeams = Object.entries(teamPoints)
       .map(([teamId, data]) => ({ teamId, ...data }))
@@ -632,3 +678,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
