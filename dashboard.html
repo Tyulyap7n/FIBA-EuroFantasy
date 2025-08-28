@@ -210,50 +210,6 @@
         <button id="save-roster" class="btn-yellow">Save roster</button>
         <button id="reset-roster" class="reset-roster-btn">Reset Roster</button>
       </div>
-
-      <script>
-      // Функция для удаления игрока из слота
-      function removePlayer(role) {
-        const slot = document.getElementById(`slot-${role}`);
-        const emptySlot = slot.querySelector('.empty-slot');
-        
-        emptySlot.textContent = '—';
-        emptySlot.dataset.playerId = '';
-        emptySlot.dataset.playerName = '';
-        
-        console.log(`Игрок удален из роли: ${role}`);
-        updateBudget(); // Обновляем бюджет
-      }
-      
-      // Функция для полного сброса состава
-      function resetRoster() {
-        if (confirm('Вы уверены, что хотите полностью очистить состав? Все выбранные игроки будут удалены.')) {
-          const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
-          
-          roles.forEach(role => {
-            const slot = document.getElementById(`slot-${role}`);
-            const emptySlot = slot.querySelector('.empty-slot');
-            
-            emptySlot.textContent = '—';
-            emptySlot.dataset.playerId = '';
-            emptySlot.dataset.playerName = '';
-          });
-          
-          console.log('Весь состав очищен');
-          updateBudget(); // Обновляем бюджет
-          alert('Состав полностью очищен!');
-        }
-      }
-      
-      // Функция для обновления бюджета (должна быть в script.js)
-      function updateBudget() {
-        // Эта функция должна быть реализована в script.js
-        // Здесь просто вызываем ее, если она существует
-        if (typeof window.updateBudget === 'function') {
-          window.updateBudget();
-        }
-      }
-      </script>
       
       <div id="team-history"></div>
     </div>
@@ -261,6 +217,51 @@
 </main>
 
 <script>
+// Глобальные функции для управления составом
+window.removePlayer = function(role) {
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+  
+  emptySlot.textContent = '—';
+  emptySlot.dataset.playerId = '';
+  emptySlot.dataset.playerName = '';
+  
+  console.log(`Игрок удален из роли: ${role}`);
+  updateBudget(); // Обновляем бюджет
+}
+
+window.resetRoster = function() {
+  if (confirm('Вы уверены, что хотите полностью очистить состав? Все выбранные игроки будут удалены.')) {
+    const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
+    
+    roles.forEach(role => {
+      const slot = document.getElementById(`slot-${role}`);
+      const emptySlot = slot.querySelector('.empty-slot');
+      
+      emptySlot.textContent = '—';
+      emptySlot.dataset.playerId = '';
+      emptySlot.dataset.playerName = '';
+    });
+    
+    console.log('Весь состав очищен');
+    updateBudget(); // Обновляем бюджет
+    alert('Состав полностью очищен!');
+  }
+}
+
+// Функция для обновления бюджета (должна быть в script.js)
+function updateBudget() {
+  // Эта функция должна быть реализована в script.js
+  // Здесь просто вызываем ее, если она существует
+  if (typeof window.updateBudget === 'function') {
+    window.updateBudget();
+  } else {
+    // Временная заглушка для тестирования
+    console.log('Бюджет обновлен (заглушка)');
+    document.getElementById('spent-money').textContent = '0';
+  }
+}
+
 // Функция для загрузки места в турнире
 async function loadTournamentRank() {
   try {
@@ -313,13 +314,19 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(loadTournamentRank, 1000);
   
   // Добавляем обработчик для кнопки Reset Roster
-  document.getElementById('reset-roster')?.addEventListener('click', resetRoster);
+  const resetButton = document.getElementById('reset-roster');
+  if (resetButton) {
+    resetButton.addEventListener('click', window.resetRoster);
+  }
 });
 
 // Также обновляем рейтинг при сохранении состава
-document.getElementById('save-roster')?.addEventListener('click', function() {
-  setTimeout(loadTournamentRank, 2000);
-});
+const saveButton = document.getElementById('save-roster');
+if (saveButton) {
+  saveButton.addEventListener('click', function() {
+    setTimeout(loadTournamentRank, 2000);
+  });
+}
 </script>
 </body>
 </html>
