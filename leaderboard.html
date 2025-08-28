@@ -265,7 +265,7 @@ a img {
 <script type="module">
 const supabase = window.supabase.createClient(
   "https://xovxokupvsnnjtskdgvr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhbmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 
 const ITEMS_PER_PAGE = 15;
@@ -479,7 +479,7 @@ function renderPage(page) {
       <td>${place}</td>
       <td>${team.name}</td>
       <td>${team.tour_1} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="1">ROSTER</button></td>
-      <td>${team.tour_2_3} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="2-3">ROSTER</button></td>
+      <td>${team.tour_2_3} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="2">ROSTER</button></td>
       <td>${team.tour_4} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="4">ROSTER</button></td>
       <td>${team.tour_5} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="5">ROSTER</button></td>
       <td>${team.tour_6} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="6">ROSTER</button></td>
@@ -492,14 +492,18 @@ function renderPage(page) {
     tbody.appendChild(row);
   });
 
-  // Добавляем обработчики событий
-  document.querySelectorAll('.show-lineup').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+  // Добавляем обработчики событий для кнопок ROSTER
+  addRosterButtonListeners();
+}
+
+function addRosterButtonListeners() {
+  // Используем делегирование событий на таблице
+  document.getElementById('leaderboard-body').addEventListener('click', (e) => {
+    if (e.target.classList.contains('show-lineup')) {
       const teamId = e.target.dataset.teamId;
-      const tour = e.target.dataset.tour;
-      const tourId = tour === '2-3' ? 2 : tour === '99' ? 99 : parseInt(tour);
-      await showRoster(teamId, tourId);
-    });
+      const tour = parseInt(e.target.dataset.tour);
+      showRoster(teamId, tour);
+    }
   });
 }
 
@@ -558,7 +562,10 @@ async function showRoster(teamId, currentTour = 1) {
       tp => tp.team_id === teamId && tp.tour_id === currentTour
     );
 
-    if (teamPlayers.length === 0) return;
+    if (teamPlayers.length === 0) {
+      console.log('Нет данных о составе команды', teamId, 'для тура', currentTour);
+      return;
+    }
 
     const panel = document.getElementById('roster-panel');
     const list = document.getElementById('roster-list');
@@ -586,10 +593,24 @@ async function showRoster(teamId, currentTour = 1) {
     }
 
     panel.classList.remove('hidden');
+    
+    // Прокручиваем к панели состава
+    panel.scrollIntoView({ behavior: 'smooth' });
+    
   } catch (e) {
     console.error('Ошибка showRoster:', e);
   }
 }
+
+// Закрытие панели состава при клике вне ее
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('roster-panel');
+  if (!panel.classList.contains('hidden') && 
+      !e.target.closest('.roster-panel') && 
+      !e.target.classList.contains('show-lineup')) {
+    panel.classList.add('hidden');
+  }
+});
 
 document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
