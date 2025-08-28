@@ -323,7 +323,7 @@ async function loadLeaderboard() {
       teamPoints[team.id] = {
         name: team.team_name,
         tour_1: 0,
-        tour_2_3: 0, // Сумма очков за тур 2 и тур 3
+        tour_2_3: 0,
         tour_4: 0,
         tour_5: 0,
         tour_6: 0,
@@ -459,6 +459,7 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
   tbody.innerHTML = '';
@@ -619,34 +620,30 @@ async function renderTeamHistory(teamId) {
   }
 }
 
-async function showRoster(teamId, currentTour) {
+async function showRoster(teamId, currentTour=1) {
   try {
-    let tourIds = [currentTour];
-    if (currentTour === 2) {
-      tourIds = [2, 3]; // Если текущий тур 2, загружаем данные за оба тура 2 и 3
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (id, name, formula)')
+      .eq('team_id', teamId)
+      .eq('tour_id', currentTour);
+
+    if(!teamPlayers) return;
+
+    const playerIds = teamPlayers.map(p => p.player_id);
+
+    // Загружаем статистику игроков за тур 2 и тур 3, если текущий тур 2-3
+    let toursToLoad = [currentTour];
+    if (currentTour === 2 || currentTour === 3) {
+      toursToLoad = [2, 3];
     }
 
-    const rosterPromises = tourIds.map(tourId =>
-      supabase
-        .from('team_players')
-        .select('player_id, role_id (id, name, formula)')
-        .eq('team_id', teamId)
-        .eq('tour_id', tourId)
-    );
-
-    const rosterResults = await Promise.all(rosterPromises);
-    const teamPlayers = rosterResults.flatMap(result => result.data || []);
-
-    if (!teamPlayers.length) return;
-
-    const playerIds = [...new Set(teamPlayers.map(p => p.player_id))];
-
-    const statsPromises = tourIds.map(tourId =>
+    const statsPromises = toursToLoad.map(tour =>
       supabase
         .from('player_stats')
         .select('*')
         .in('player_id', playerIds)
-        .eq('tour', tourId)
+        .eq('tour', tour)
     );
 
     const statsResults = await Promise.all(statsPromises);
@@ -672,36 +669,48 @@ async function showRoster(teamId, currentTour) {
     const list = document.getElementById('roster-list');
     list.innerHTML = '';
 
-    const uniquePlayers = [...new Set(teamPlayers.map(p => p.player_id))];
-
-    uniquePlayers.forEach(playerId => {
-      const playerTeamEntries = teamPlayers.filter(p => p.player_id === playerId);
-      const player = playersMap[playerId];
+    teamPlayers.forEach(p => {
+      const playerStats = statsMap[p.player_id] || {};
+      const formula = p.role_id?.formula;
+      const player = playersMap[p.player_id];
       if (!player) return;
 
-      let totalPoints = 0;
-
-      playerTeamEntries.forEach(entry => {
-        const stats = statsMap[playerId]?.[entry.tour_id] || {};
-        const formula = entry.role_id?.formula;
-        if (!formula) return;
-
-        const context = { ...stats, count: stats.count || 1 };
-        try {
-          const fn = new Function(...Object.keys(context), `return (${formula});`);
-          totalPoints += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
-        } catch (e) {
-          console.error('Ошибка расчёта очков игрока', player.first_name, player.last_name, e);
+      let points = 0;
+      if (formula) {
+        if (currentTour === 2 || currentTour === 3) {
+          // Суммируем очки за тур 2 и тур 3
+          let totalPoints = 0;
+          [2, 3].forEach(tour => {
+            const stats = playerStats[tour] || {};
+            const context = { ...stats, count: stats.count || 1 };
+            try {
+              const fn = new Function(...Object.keys(context), `return (${formula});`);
+              totalPoints += isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+            } catch (e) {
+              console.error('Ошибка расчёта очков игрока', player.first_name, player.last_name, e);
+            }
+          });
+          points = totalPoints;
+        } else {
+          const stats = playerStats[currentTour] || {};
+          const context = { ...stats, count: stats.count || 1 };
+          try {
+            const fn = new Function(...Object.keys(context), `return (${formula});`);
+            points = isNaN(fn(...Object.values(context))) ? 0 : fn(...Object.values(context));
+          } catch (e) {
+            console.error('Ошибка расчёта очков игрока', player.first_name, player.last_name, e);
+          }
         }
-      });
+      }
 
-      const formattedPoints = (totalPoints % 1 === 0) ? Math.round(totalPoints) : totalPoints.toFixed(1);
+      // Форматирование очков: если дробная часть равна 0, то отображаем целое число, иначе — с одним знаком после запятой
+      const formattedPoints = (points % 1 === 0) ? Math.round(points) : points.toFixed(1);
 
       const card = document.createElement('div');
       card.className = 'roster-card';
       card.innerHTML = `
         <img src="${player.photo_url || 'image/ball.svg'}" alt="">
-        <div class="role">${playerTeamEntries[0].role_id?.name || 'Без роли'}</div>
+        <div class="role">${p.role_id?.name || 'Без роли'}</div>
         <div class="name">${player.first_name} ${player.last_name}</div>
         <div class="club">${player.country}</div>
         <div class="points">Очки: ${formattedPoints}</div>
@@ -717,12 +726,14 @@ async function showRoster(teamId, currentTour) {
 
 
 
+
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
 });
 </script>
 </body>
 </html>
+
 
 
 
