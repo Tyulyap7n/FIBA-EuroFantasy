@@ -460,6 +460,7 @@ async function loadLeaderboard() {
   }
 }
 
+
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
   tbody.innerHTML = '';
@@ -472,17 +473,14 @@ function renderPage(page) {
     const team = pageTeams[i];
     const row = document.createElement('tr');
 
-    // Добавляем столбец "Место"
     const placeCell = document.createElement('td');
     placeCell.innerText = start + i + 1;
     row.appendChild(placeCell);
 
-    // Добавляем название команды
     const nameCell = document.createElement('td');
     nameCell.innerText = team.name;
     row.appendChild(nameCell);
 
-    // Очки по турам
     const tours = [
       { key: 'tour_1', label: '1' },
       { key: 'tour_2_3', label: '2-3' },
@@ -501,7 +499,6 @@ function renderPage(page) {
       row.appendChild(cell);
     });
 
-    // Итоговые очки
     const totalCell = document.createElement('td');
     totalCell.innerText = Math.round(team.total);
     row.appendChild(totalCell);
@@ -509,17 +506,14 @@ function renderPage(page) {
     tbody.appendChild(row);
   }
 
-  // Обработчики кнопок ROSTER
   document.querySelectorAll('.show-lineup').forEach(btn => {
     btn.addEventListener('click', async e => {
       const teamId = e.target.dataset.teamId;
       const tour = e.target.dataset.tour;
-      const tourId = tour.includes("-") ? 2 : tour === "Финалы" ? 99 : parseInt(tour);
-      await showRoster(teamId, tourId);
+      await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour == "Финалы" ? 99 : parseInt(tour));
     });
   });
 }
-
 
 function renderPagination() {
   const paginationEl = document.getElementById('pagination');
@@ -725,15 +719,10 @@ async function showRoster(teamId, currentTour=1) {
 }
 
 
-
-
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
 });
 </script>
 </body>
 </html>
-
-
-
 
