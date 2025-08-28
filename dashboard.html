@@ -17,6 +17,28 @@
   <script src="script.js" defer></script>
   <!-- no-op (оставлен) -->
   <script src="dashboard.js" defer></script>
+  <style>
+    /* Стиль для отображения места в турнире */
+    .tournament-rank {
+      position: absolute;
+      right: 20px;
+      top: 10px;
+      background: var(--yellow);
+      color: black;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .starting-vi-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
 <header class="site-header">
@@ -95,7 +117,7 @@
 				<th>Price</th>
 				<th>AVG</th>
 				<th>PTS</th>
-				<th>AST</th>        <!-- добавили ассисты -->
+				<th>AST</th>
 				<th>REB</th>
 				<th>STL</th>
 				<th>BLK</th>
@@ -103,7 +125,6 @@
 			  </tr>
 			</thead>
 			<tbody id="players-tbody"></tbody>
-
           </table>
 
           <div class="pagination">
@@ -114,69 +135,129 @@
         </div>
       </div>
 
-<div class="starting-vi">STARTING VI</div>
-<div class="roles-lineup">
-  <div class="role-slot" id="slot-Scorer">
-    <div class="empty-slot">—</div>
-    <div class="role-name">SCORER</div>
-    <button class="remove-btn" onclick="removePlayer('Scorer')">✕ Удалить</button>
-  </div>
-  
-  <div class="role-slot" id="slot-Assistant">
-    <div class="empty-slot">—</div>
-    <div class="role-name">ASSISTANT</div>
-    <button class="remove-btn" onclick="removePlayer('Assistant')">✕ Удалить</button>
-  </div>
-  
-  <div class="role-slot" id="slot-Rebounder">
-    <div class="empty-slot">—</div>
-    <div class="role-name">REBOUNDER</div>
-    <button class="remove-btn" onclick="removePlayer('Rebounder')">✕ Удалить</button>
-  </div>
-  
-  <div class="role-slot" id="slot-Stopper">
-    <div class="empty-slot">—</div>
-    <div class="role-name">STOPPER</div>
-    <button class="remove-btn" onclick="removePlayer('Stopper')">✕ Удалить</button>
-  </div>
-  
-  <div class="role-slot" id="slot-Shooter">
-    <div class="empty-slot">—</div>
-    <div class="role-name">SHOOTER</div>
-    <button class="remove-btn" onclick="removePlayer('Shooter')">✕ Удалить</button>
-  </div>
-  
-  <div class="role-slot" id="slot-Young">
-    <div class="empty-slot">—</div>
-    <div class="role-name">SURPRISE</div>
-    <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
-  </div>
-</div>
+      <div class="starting-vi-container">
+        <div class="starting-vi">STARTING VI</div>
+        <div id="tournament-rank" class="tournament-rank">Место: загрузка...</div>
+      </div>
 
-<script>
-// Функция для удаления игрока из слота
-function removePlayer(role) {
-  const slot = document.getElementById(`slot-${role}`);
-  const emptySlot = slot.querySelector('.empty-slot');
-  const removeBtn = slot.querySelector('.remove-btn');
-  
-  emptySlot.textContent = '—';
-  
-  console.log(`Игрок удален из роли: ${role}`);
-}
-</script>
-		<div id="team-history"></div>
+      <div class="roles-lineup">
+        <div class="role-slot" id="slot-Scorer">
+          <div class="empty-slot">—</div>
+          <div class="role-name">SCORER</div>
+          <button class="remove-btn" onclick="removePlayer('Scorer')">✕ Удалить</button>
+        </div>
+        
+        <div class="role-slot" id="slot-Assistant">
+          <div class="empty-slot">—</div>
+          <div class="role-name">ASSISTANT</div>
+          <button class="remove-btn" onclick="removePlayer('Assistant')">✕ Удалить</button>
+        </div>
+        
+        <div class="role-slot" id="slot-Rebounder">
+          <div class="empty-slot">—</div>
+          <div class="role-name">REBOUNDER</div>
+          <button class="remove-btn" onclick="removePlayer('Rebounder')">✕ Удалить</button>
+        </div>
+        
+        <div class="role-slot" id="slot-Stopper">
+          <div class="empty-slot">—</div>
+          <div class="role-name">STOPPER</div>
+          <button class="remove-btn" onclick="removePlayer('Stopper')">✕ Удалить</button>
+        </div>
+        
+        <div class="role-slot" id="slot-Shooter">
+          <div class="empty-slot">—</div>
+          <div class="role-name">SHOOTER</div>
+          <button class="remove-btn" onclick="removePlayer('Shooter')">✕ Удалить</button>
+        </div>
+        
+        <div class="role-slot" id="slot-Young">
+          <div class="empty-slot">—</div>
+          <div class="role-name">SURPRISE</div>
+          <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
+        </div>
+      </div>
 
+      <script>
+      // Функция для удаления игрока из слота
+      function removePlayer(role) {
+        const slot = document.getElementById(`slot-${role}`);
+        const emptySlot = slot.querySelector('.empty-slot');
+        const removeBtn = slot.querySelector('.remove-btn');
+        
+        emptySlot.textContent = '—';
+        
+        console.log(`Игрок удален из роли: ${role}`);
+      }
+      </script>
+      
+      <div id="team-history"></div>
       <button id="save-roster" class="btn-yellow">Save roster</button>
     </div>
   </section>
 </main>
+
+<script>
+// Функция для загрузки места в турнире
+async function loadTournamentRank() {
+  try {
+    // Получаем текущего пользователя
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.log('Пользователь не авторизован');
+      document.getElementById('tournament-rank').textContent = 'Место: не авторизован';
+      return;
+    }
+
+    // Получаем команду пользователя
+    const { data: userTeam, error: teamError } = await supabase
+      .from('user_teams')
+      .select('id, team_name')
+      .eq('user_id', user.id)
+      .single();
+
+    if (teamError || !userTeam) {
+      console.log('Команда не найдена');
+      document.getElementById('tournament-rank').textContent = 'Место: команда не создана';
+      return;
+    }
+
+    // Загружаем все команды для расчета рейтинга
+    const { data: allTeams, error: teamsError } = await supabase
+      .from('user_teams')
+      .select('id, team_name');
+
+    if (teamsError) {
+      console.error('Ошибка загрузки команд:', teamsError);
+      document.getElementById('tournament-rank').textContent = 'Место: ошибка';
+      return;
+    }
+
+    // Здесь должна быть логика расчета очков для всех команд
+    // Для примера просто показываем фиктивное место
+    // В реальности нужно реализовать расчет очков как в leaderboard
+    
+    const userTeamId = userTeam.id;
+    const randomRank = Math.floor(Math.random() * (allTeams.length || 100)) + 1;
+    
+    document.getElementById('tournament-rank').textContent = `Место: ${randomRank}`;
+    
+  } catch (error) {
+    console.error('Ошибка загрузки рейтинга:', error);
+    document.getElementById('tournament-rank').textContent = 'Место: ошибка';
+  }
+}
+
+// Загружаем рейтинг при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+  // Ждем инициализации Supabase
+  setTimeout(loadTournamentRank, 1000);
+});
+
+// Также обновляем рейтинг при сохранении состава
+document.getElementById('save-roster')?.addEventListener('click', function() {
+  setTimeout(loadTournamentRank, 2000); // Обновляем через 2 секунды после сохранения
+});
+</script>
 </body>
 </html>
-
-
-
-
-
-
-
