@@ -195,6 +195,13 @@
   margin-bottom: 0.3rem; /* Отступ снизу */
   color: var(--orange); /* Цвет текста */
 }
+/* Роль игрока */
+.roster-card .role {
+  font-size: 0.75rem; /* Размер текста */
+  color: var(--yellow); /* Цвет текста */
+  margin-bottom: 0.3rem; /* Отступ снизу */
+  font-style: italic;
+}
 /* Клуб/страна игрока */
 .roster-card .club {
   font-size: 0.8rem; /* Размер текста */
@@ -532,9 +539,9 @@ async function showRoster(teamId, currentTour=1){
   try {
     const { data: teamPlayers } = await supabase
       .from('team_players')
-      .select('player_id, role_id (formula)')
+      .select('player_id, role_id (id, name, formula)')
       .eq('team_id', teamId)
-      .eq('tour_id', currentTour); // ✅ фильтр по туру
+      .eq('tour_id', currentTour);
     if(!teamPlayers) return;
     const playerIds = teamPlayers.map(p=>p.player_id);
     const { data: statsData } = await supabase
@@ -571,6 +578,7 @@ async function showRoster(teamId, currentTour=1){
       card.innerHTML=`
         <img src="${player.photo_url||'image/ball.svg'}" alt="">
         <div class="name">${player.first_name} ${player.last_name}</div>
+        <div class="role">${p.role_id?.name || 'Без роли'}</div>
         <div class="points">Очки: ${Math.round(points)}</div>
         <div class="club">${player.country}</div>
       `;
@@ -587,4 +595,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
-
