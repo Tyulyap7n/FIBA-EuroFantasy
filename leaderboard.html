@@ -195,19 +195,20 @@
   margin-bottom: 0.3rem; /* Отступ снизу */
   color: var(--orange); /* Цвет текста */
 }
+/* Цена игрока */
+.roster-card .price {
+  font-size: 0.8rem;
+  color: var(--white);
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+}
+
 /* Роль игрока */
 .roster-card .role {
   font-size: 0.75rem; /* Размер текста */
   color: var(--yellow); /* Цвет текста */
   margin-bottom: 0.3rem; /* Отступ снизу */
   font-style: italic;
-}
-/* Цена игрока */
-.roster-card .price {
-  font-size: 0.8rem; /* Размер текста */
-  color: var(--white); /* Цвет текста */
-  margin-bottom: 0.3rem; /* Отступ снизу */
-  font-weight: bold;
 }
 /* Клуб/страна игрока */
 .roster-card .club {
@@ -269,7 +270,7 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 20;
 let currentPage = 1;
 let allTeams = [];
 
@@ -582,14 +583,15 @@ async function showRoster(teamId, currentTour=1){
       }
       const card=document.createElement('div');
       card.className='roster-card';
-      card.innerHTML=`
-        <img src="${player.photo_url||'image/ball.svg'}" alt="">
-        <div class="name">${player.first_name} ${player.last_name}</div>
-        <div class="role">${p.role_id?.name || 'Без роли'}</div>
-        <div class="price">Цена: ${p.price || 0}</div>
-        <div class="points">Очки: ${Math.round(points)}</div>
-        <div class="club">${player.country}</div>
-      `;
+        card.innerHTML=`
+          <img src="${player.photo_url||'image/ball.svg'}" alt="">
+          <div class="name">${player.first_name} ${player.last_name}</div>
+          <div class="role">${p.role_id?.name || 'Без роли'}</div>
+          <div class="price">Цена: ${p.price || 0}</div>
+          <div class="points">Очки: ${Math.round(points)}</div>
+          <div class="club">${player.country}</div>
+        `;
+
       list.appendChild(card);
     });
     panel.classList.remove('hidden');
