@@ -263,10 +263,11 @@ a img {
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-const supabase = window.supabase.createClient(
-  "https://xovxokupvsnnjtskdgvr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhbmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
-);
+// Правильные credentials для Supabase
+const SUPABASE_URL = "https://xovxokupvsnnjtskdgvr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ITEMS_PER_PAGE = 15;
 let currentPage = 1;
@@ -283,6 +284,8 @@ let cachedData = {
 
 async function loadAllData() {
   try {
+    console.log('Начинаем загрузку данных...');
+    
     // Загружаем все данные одним запросом
     const [
       { data: teams, error: teamsError },
@@ -298,11 +301,12 @@ async function loadAllData() {
       supabase.from('players').select('id, first_name, last_name, photo_url, country')
     ]);
 
-    if (teamsError) throw teamsError;
-    if (teamPlayersError) throw teamPlayersError;
-    if (statsError) throw statsError;
-    if (rolesError) throw rolesError;
-    if (playersError) throw playersError;
+    // Проверяем ошибки
+    const errors = [teamsError, teamPlayersError, statsError, rolesError, playersError].filter(error => error);
+    if (errors.length > 0) {
+      console.error('Ошибки при загрузке данных:', errors);
+      throw new Error(`Ошибки загрузки: ${errors.map(e => e.message).join(', ')}`);
+    }
 
     cachedData = {
       teams: teams || [],
@@ -312,16 +316,27 @@ async function loadAllData() {
       players: players || []
     };
 
+    console.log('Данные успешно загружены:', {
+      teams: cachedData.teams.length,
+      teamPlayers: cachedData.teamPlayers.length,
+      playerStats: cachedData.playerStats.length,
+      roles: cachedData.roles.length,
+      players: cachedData.players.length
+    });
+
     return true;
   } catch (error) {
-    console.error('Ошибка загрузки данных:', error);
+    console.error('Критическая ошибка загрузки данных:', error);
     return false;
   }
 }
 
 function calculatePlayerPoints(playerId, roleId, tourId) {
   const role = cachedData.roles.find(r => r.id === roleId);
-  if (!role || !role.formula) return 0;
+  if (!role || !role.formula) {
+    console.warn('Роль или формула не найдены для playerId:', playerId, 'roleId:', roleId);
+    return 0;
+  }
 
   let points = 0;
   
@@ -338,7 +353,7 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
         const tourPoints = fn(...Object.values(context));
         points += isNaN(tourPoints) ? 0 : tourPoints;
       } catch (e) {
-        console.error('Ошибка формулы:', role.formula, e);
+        console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
       }
     });
   } else {
@@ -352,7 +367,7 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
       const tourPoints = fn(...Object.values(context));
       points += isNaN(tourPoints) ? 0 : tourPoints;
     } catch (e) {
-      console.error('Ошибка формулы:', role.formula, e);
+      console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
     }
   }
 
@@ -362,6 +377,14 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
 function calculateTeamPoints(teamId) {
   const teamPlayers = cachedData.teamPlayers.filter(tp => tp.team_id === teamId);
   
+  if (teamPlayers.length === 0) {
+    console.warn('Нет игроков в команде:', teamId);
+    return {
+      tour_1: 0, tour_2_3: 0, tour_4: 0, tour_5: 0,
+      tour_6: 0, tour_7: 0, tour_8: 0, tour_finals: 0, total: 0
+    };
+  }
+
   const pointsByTour = {
     tour_1: 0,
     tour_2_3: 0,
@@ -403,6 +426,8 @@ function calculateTeamPoints(teamId) {
       case 99:
         pointsByTour.tour_finals += points;
         break;
+      default:
+        console.warn('Неизвестный тур:', tp.tour_id, 'для команды:', teamId);
     }
   });
 
@@ -433,9 +458,19 @@ async function loadLeaderboard() {
   loadingElement.classList.remove('hidden');
   
   try {
+    console.log('Инициализация Supabase...');
+    
+    // Проверяем подключение к Supabase
+    const { data, error } = await supabase.from('user_teams').select('count').limit(1);
+    if (error) {
+      throw new Error(`Ошибка подключения к Supabase: ${error.message}`);
+    }
+
     // Загружаем все данные
     const success = await loadAllData();
-    if (!success) throw new Error('Не удалось загрузить данные');
+    if (!success) {
+      throw new Error('Не удалось загрузить данные из базы');
+    }
 
     // Рассчитываем очки для каждой команды
     allTeams = cachedData.teams.map(team => {
@@ -450,6 +485,8 @@ async function loadLeaderboard() {
     // Сортируем по убыванию очков
     allTeams.sort((a, b) => b.total - a.total);
 
+    console.log('Лидерборд сформирован. Команд:', allTeams.length);
+
     // Скрываем индикатор загрузки
     loadingElement.classList.add('hidden');
     
@@ -459,7 +496,20 @@ async function loadLeaderboard() {
 
   } catch (error) {
     console.error('Ошибка загрузки лидерборда:', error);
-    loadingElement.textContent = 'Ошибка загрузки данных. Попробуйте обновить страницу.';
+    loadingElement.innerHTML = `
+      <div style="color: var(--orange); margin-bottom: 1rem;">
+        Ошибка загрузки данных: ${error.message}
+      </div>
+      <button onclick="location.reload()" style="
+        background: var(--yellow);
+        color: black;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      ">Обновить страницу</button>
+    `;
   }
 }
 
@@ -470,6 +520,13 @@ function renderPage(page) {
   const start = (page - 1) * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE;
   const pageTeams = allTeams.slice(start, end);
+
+  if (pageTeams.length === 0) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td colspan="11" style="text-align: center; color: var(--orange);">Нет данных для отображения</td>`;
+    tbody.appendChild(row);
+    return;
+  }
 
   pageTeams.forEach((team, index) => {
     const row = document.createElement('tr');
@@ -512,6 +569,8 @@ function renderPagination() {
   paginationEl.innerHTML = '';
 
   const pageCount = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
+
+  if (pageCount <= 1) return;
 
   const prevButton = document.createElement('button');
   prevButton.textContent = '←';
@@ -563,7 +622,7 @@ async function showRoster(teamId, currentTour = 1) {
     );
 
     if (teamPlayers.length === 0) {
-      console.log('Нет данных о составе команды', teamId, 'для тура', currentTour);
+      alert(`Нет данных о составе команды для тура ${currentTour}`);
       return;
     }
 
@@ -575,7 +634,10 @@ async function showRoster(teamId, currentTour = 1) {
       const player = cachedData.players.find(p => p.id === tp.player_id);
       const role = cachedData.roles.find(r => r.id === tp.role_id);
       
-      if (!player) continue;
+      if (!player) {
+        console.warn('Игрок не найден:', tp.player_id);
+        continue;
+      }
 
       const points = calculatePlayerPoints(tp.player_id, tp.role_id, currentTour);
       const formattedPoints = (points % 1 === 0) ? Math.round(points) : points.toFixed(1);
@@ -583,10 +645,11 @@ async function showRoster(teamId, currentTour = 1) {
       const card = document.createElement('div');
       card.className = 'roster-card';
       card.innerHTML = `
-        <img src="${player.photo_url || 'image/ball.svg'}" alt="${player.first_name} ${player.last_name}">
+        <img src="${player.photo_url || 'image/ball.svg'}" alt="${player.first_name} ${player.last_name}" 
+             onerror="this.src='image/ball.svg'">
         <div class="role">${role?.name || 'Без роли'}</div>
         <div class="name">${player.first_name} ${player.last_name}</div>
-        <div class="club">${player.country}</div>
+        <div class="club">${player.country || 'Не указано'}</div>
         <div class="points">Очки: ${formattedPoints}</div>
       `;
       list.appendChild(card);
@@ -599,6 +662,7 @@ async function showRoster(teamId, currentTour = 1) {
     
   } catch (e) {
     console.error('Ошибка showRoster:', e);
+    alert('Ошибка при загрузке состава команды');
   }
 }
 
@@ -612,6 +676,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Запускаем загрузку при готовности DOM
 document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
