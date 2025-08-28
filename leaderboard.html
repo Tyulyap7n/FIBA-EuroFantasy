@@ -179,6 +179,30 @@
   padding: 0.8rem; /* Внутренние отступы */
   text-align: center; /* Выравнивание содержимого по центру */
   box-shadow: 0 0 8px rgba(0,0,0,0.4); /* Тень карточки */
+  position: relative;
+}
+/* Контейнер для фото с относительным позиционированием */
+.roster-card .photo-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+/* Кружок с ценой */
+.price-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: var(--orange);
+  color: black;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  z-index: 10;
 }
 /* Фото игрока */
 .roster-card img {
@@ -221,7 +245,6 @@ a img {
 .hidden { display: none; }
 </style>
 </head>
-  <script src="script.js"></script>
 <body>
   <header class="site-header">
   <div class="logo-container">
@@ -259,7 +282,7 @@ a img {
 <script type="module">
 const supabase = window.supabase.createClient(
   "https://xovxokupvsnnjtskdgvr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubmp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhvdnhva3VwdnNubnp0c2tkZ3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4NDk4NjMsImV4cCI6MjA3MDQyNTg2M30.Vl5Z9DABFmHQWGtfbyuAZGGgfX4hDYGAPD8C7fr540E"
 );
 const TOURS = ["1","2-3","4","5","1/8","1/4","1/2","Финалы"];
 const ITEMS_PER_PAGE = 15;
@@ -268,11 +291,11 @@ let allTeams = [];
 
 async function calculateTeamPoints(teamId, currentTour = 1) {
   try {
-  const { data: teamPlayers } = await supabase
-    .from('team_players')
-    .select('player_id, role_id (formula)')
-    .eq('team_id', teamId)
-    .eq('tour_id', currentTour);
+    const { data: teamPlayers } = await supabase
+      .from('team_players')
+      .select('player_id, role_id (formula)')
+      .eq('team_id', teamId)
+      .eq('tour_id', currentTour);
     if (!teamPlayers || teamPlayers.length === 0) return 0;
     const playerIds = teamPlayers.map(p => p.player_id);
     const { data: statsData } = await supabase
@@ -299,16 +322,14 @@ async function calculateTeamPoints(teamId, currentTour = 1) {
     return 0;
   }
 }
+
 async function loadLeaderboard() {
   try {
-    // 1. Загружаем список команд
     const { data: teams, error: teamsError } = await supabase
       .from('user_teams')
       .select('id, team_name');
     if (teamsError) throw teamsError;
-    // 2. Создаем объект для хранения очков команд
     const teamPoints = {};
-    // 3. Инициализируем данные для каждой команды
     teams.forEach(team => {
       teamPoints[team.id] = {
         name: team.team_name,
@@ -323,26 +344,21 @@ async function loadLeaderboard() {
         total: 0,
       };
     });
-    // 4. Загружаем данные из leaderboard_cache и агрегируем очки по командам
     const { data: playerStats, error: statsError } = await supabase
       .from('leaderboard_cache')
       .select('*');
     if (statsError) throw statsError;
-    // 5. Загружаем данные о составе команд
     const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('team_players')
       .select('team_id, player_id, tour_id, role_id');
     if (teamPlayersError) throw teamPlayersError;
-    // 6. Рассчитываем очки для каждой команды
     for (const team of teams) {
       const teamId = team.id;
       const playersInTeam = teamPlayers.filter(tp => tp.team_id === teamId);
       for (const player of playersInTeam) {
         const stat = playerStats.find(s => s.player_id === player.player_id && s.tour_number === player.tour_id);
         if (!stat) continue;
-        // Используем очки игрока
-        const points = stat.points; // или используйте вашу логику расчета очков
-        // Добавляем очки игрока в соответствующий тур
+        const points = stat.points;
         switch (player.tour_id) {
           case 1:
             teamPoints[teamId].tour_1 += points;
@@ -373,7 +389,6 @@ async function loadLeaderboard() {
             break;
         }
       }
-      // Рассчитываем итоговые очки
       teamPoints[teamId].total =
         teamPoints[teamId].tour_1 +
         teamPoints[teamId].tour_2_3 +
@@ -384,18 +399,16 @@ async function loadLeaderboard() {
         teamPoints[teamId].tour_8 +
         teamPoints[teamId].tour_finals;
     }
-    // 7. Сортируем команды по убыванию итоговых очков
     allTeams = Object.entries(teamPoints)
       .map(([teamId, data]) => ({ teamId, ...data }))
       .sort((a, b) => b.total - a.total);
-    // 8. Заполняем таблицу лидерборда (только текущая страница)
     renderPage(currentPage);
-    // 9. Рендерим пагинацию
     renderPagination();
   } catch (e) {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
   tbody.innerHTML = '';
@@ -405,15 +418,12 @@ function renderPage(page) {
   for (let i = 0; i < pageTeams.length; i++) {
     const team = pageTeams[i];
     const row = document.createElement('tr');
-    // Добавляем столбец "Место"
     const placeCell = document.createElement('td');
     placeCell.innerText = start + i + 1;
     row.appendChild(placeCell);
-    // Добавляем название команды
     const nameCell = document.createElement('td');
     nameCell.innerText = team.name;
     row.appendChild(nameCell);
-    // Очки по турам
     const tours = [
       { key: 'tour_1', label: '1' },
       { key: 'tour_2_3', label: '2-3' },
@@ -432,13 +442,11 @@ function renderPage(page) {
       cell.innerHTML = `${Math.round(points)} <button class="show-lineup" data-team-id="${team.teamId}" data-tour="${tour.label}">ROSTER</button>`;
       row.appendChild(cell);
     });
-    // Итоговые очки
     const totalCell = document.createElement('td');
     totalCell.innerText = Math.round(team.total);
     row.appendChild(totalCell);
     tbody.appendChild(row);
   }
-  // Обработчики кнопок ROSTER
   document.querySelectorAll('.show-lineup').forEach(btn => {
     btn.addEventListener('click', async e => {
       const teamId = e.target.dataset.teamId;
@@ -447,11 +455,11 @@ function renderPage(page) {
     });
   });
 }
+
 function renderPagination() {
   const paginationEl = document.getElementById('pagination');
   paginationEl.innerHTML = '';
   const pageCount = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
-  // Кнопка "Назад"
   const prevButton = document.createElement('button');
   prevButton.textContent = '←';
   prevButton.addEventListener('click', () => {
@@ -462,7 +470,6 @@ function renderPagination() {
     }
   });
   paginationEl.appendChild(prevButton);
-  // Кнопки номеров страниц
   for (let i = 1; i <= pageCount; i++) {
     const pageButton = document.createElement('button');
     pageButton.textContent = i;
@@ -476,7 +483,6 @@ function renderPagination() {
     });
     paginationEl.appendChild(pageButton);
   }
-  // Кнопка "Вперед"
   const nextButton = document.createElement('button');
   nextButton.textContent = '→';
   nextButton.addEventListener('click', () => {
@@ -488,8 +494,9 @@ function renderPagination() {
   });
   paginationEl.appendChild(nextButton);
 }
+
 async function renderTeamHistory(teamId) {
-  if (!ensureSupabase() || !teamId) return;
+  if (!teamId) return;
   try {
     const { data, error } = await supabase
       .from("team_players")
@@ -499,28 +506,24 @@ async function renderTeamHistory(teamId) {
     if (error) throw error;
     const historyEl = document.getElementById("team-history");
     historyEl.innerHTML = "";
-    // группировка по турам
     const groupedByTour = {};
     data.forEach(p => {
       if (!groupedByTour[p.tour_id]) groupedByTour[p.tour_id] = [];
       groupedByTour[p.tour_id].push(p);
     });
-    // рендер по каждому туру
     Object.keys(groupedByTour).forEach(tourId => {
       const tourBlock = document.createElement("div");
       tourBlock.className = "tour-block";
-      // заголовок тура
       const tourTitle = document.createElement("h3");
       tourTitle.textContent = getTourLabel(parseInt(tourId));
       tourBlock.appendChild(tourTitle);
-      // список игроков
       const playersList = document.createElement("div");
       playersList.className = "players-list";
       groupedByTour[tourId].forEach(p => {
         const playerDiv = document.createElement("div");
         playerDiv.className = "player-card";
         const img = document.createElement("img");
-        img.src = p.players?.photo || DEFAULT_AVATAR;
+        img.src = p.players?.photo || 'image/ball.svg';
         img.alt = p.players?.name || "Player";
         const name = document.createElement("span");
         name.textContent = p.players?.name || "Неизвестный";
@@ -535,6 +538,7 @@ async function renderTeamHistory(teamId) {
     console.error("Ошибка загрузки истории состава:", err);
   }
 }
+
 async function showRoster(teamId, currentTour=1){
   try {
     const { data: teamPlayers } = await supabase
@@ -576,11 +580,14 @@ async function showRoster(teamId, currentTour=1){
       const card=document.createElement('div');
       card.className='roster-card';
       card.innerHTML=`
-        <img src="${player.photo_url||'image/ball.svg'}" alt="">
-        <div class="name">${player.first_name} ${player.last_name}</div>
+        <div class="photo-container">
+          <img src="${player.photo_url||'image/ball.svg'}" alt="">
+          <div class="price-badge">${player.price ? player.price : '?'}</div>
+        </div>
         <div class="role">${p.role_id?.name || 'Без роли'}</div>
-        <div class="points">Очки: ${Math.round(points)}</div>
+        <div class="name">${player.first_name} ${player.last_name}</div>
         <div class="club">${player.country}</div>
+        <div class="points">Очки: ${Math.round(points)}</div>
       `;
       list.appendChild(card);
     });
@@ -589,10 +596,10 @@ async function showRoster(teamId, currentTour=1){
     console.error('Ошибка showRoster:', e);
   }
 }
+
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLeaderboard();
 });
 </script>
 </body>
 </html>
-
