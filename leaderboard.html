@@ -291,26 +291,102 @@ async function calculateTeamPoints(teamId, currentTour = 1) {
 
 async function loadLeaderboard() {
   try {
-    const { data: teams } = await supabase.from('user_teams').select('id, team_name');
+    // 1. Загружаем данные из leaderboard_cache
+    const { data: playerStats, error: statsError } = await supabase
+      .from('leaderboard_cache')
+      .select('*');
+
+    if (statsError) throw statsError;
+
+    // 2. Загружаем список команд
+    const { data: teams, error: teamsError } = await supabase
+      .from('user_teams')
+      .select('id, team_name');
+
+    if (teamsError) throw teamsError;
+
+    // 3. Агрегируем очки по командам
+    const teamPoints = {};
+    teams.forEach(team => {
+      teamPoints[team.id] = {
+        name: team.team_name,
+        tour_1: 0,
+        tour_2_3: 0,
+        tour_4: 0,
+        tour_5: 0,
+        tour_6: 0,
+        tour_7: 0,
+        tour_8: 0,
+        tour_finals: 0,
+        total: 0,
+      };
+    });
+
+    // 4. Заполняем очки по турам
+    playerStats.forEach(stat => {
+      if (stat.team_id && teamPoints[stat.team_id]) {
+        const team = teamPoints[stat.team_id];
+        switch (stat.tour_number) {
+          case 1:
+            team.tour_1 += stat.points;
+            break;
+          case 2:
+          case 3:
+            team.tour_2_3 += stat.points;
+            break;
+          case 4:
+            team.tour_4 += stat.points;
+            break;
+          case 5:
+            team.tour_5 += stat.points;
+            break;
+          case 6:
+            team.tour_6 += stat.points;
+            break;
+          case 7:
+            team.tour_7 += stat.points;
+            break;
+          case 8:
+            team.tour_8 += stat.points;
+            break;
+          case 99:
+            team.tour_finals += stat.points;
+            break;
+        }
+      }
+    });
+
+    // 5. Заполняем таблицу лидерборда
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
 
-    for(const team of teams){
+    for (const teamId in teamPoints) {
+      const team = teamPoints[teamId];
       const row = document.createElement('tr');
+      row.innerHTML = `<td>${team.name}</td>`;
+
+      // Очки по турам
+      const tours = [
+        { key: 'tour_1', label: '1' },
+        { key: 'tour_2_3', label: '2-3' },
+        { key: 'tour_4', label: '4' },
+        { key: 'tour_5', label: '5' },
+        { key: 'tour_6', label: '1/8' },
+        { key: 'tour_7', label: '1/4' },
+        { key: 'tour_8', label: '1/2' },
+        { key: 'tour_finals', label: 'Финалы' },
+      ];
+
       let totalSum = 0;
-      row.innerHTML = `<td>${team.team_name}</td>`;
-
-      for(const tour of TOURS){
-        const tourNumbers = tour.includes("-") ? tour.split("-").map(Number) : [tour=="Финалы"?99:Number(tour)];
-        let points = 0;
-        for(const t of tourNumbers) points += await calculateTeamPoints(team.id, t);
+      tours.forEach(tour => {
+        const points = team[tour.key];
         totalSum += points;
-
         const cell = document.createElement('td');
-        cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${team.id}" data-tour="${tour}">ROSTER</button>`;
+        cell.innerHTML = `${points} <button class="show-lineup" data-team-id="${teamId}" data-tour="${tour.label}">ROSTER</button>`;
         row.appendChild(cell);
-      }
+      });
 
+      // Итоговые очки
       const totalCell = document.createElement('td');
       totalCell.innerText = totalSum;
       row.appendChild(totalCell);
@@ -318,17 +394,20 @@ async function loadLeaderboard() {
       tbody.appendChild(row);
     }
 
-    document.querySelectorAll('.show-lineup').forEach(btn=>{
-      btn.addEventListener('click', async e=>{
-        const teamId=e.target.dataset.teamId;
-        const tour=e.target.dataset.tour;
-        await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour=="Финалы"?99:parseInt(tour));
+    // Обработчики кнопок ROSTER
+    document.querySelectorAll('.show-lineup').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const teamId = e.target.dataset.teamId;
+        const tour = e.target.dataset.tour;
+        await showRoster(teamId, tour.includes("-") ? parseInt(tour.split("-")[0]) : tour == "Финалы" ? 99 : parseInt(tour));
       });
     });
-  } catch(e) {
+  } catch (e) {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
+
 async function renderTeamHistory(teamId) {
   if (!ensureSupabase() || !teamId) return;
 
@@ -465,6 +544,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
