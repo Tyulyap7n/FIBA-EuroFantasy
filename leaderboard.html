@@ -311,7 +311,6 @@ async function loadLeaderboard() {
     const { data: teams, error: teamsError } = await supabase
       .from('user_teams')
       .select('id, team_name');
-
     if (teamsError) throw teamsError;
 
     // 2. Создаем объект для хранения очков команд
@@ -337,14 +336,12 @@ async function loadLeaderboard() {
     const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('team_players')
       .select('team_id, player_id, tour_id, role_id (formula)');
-
     if (teamPlayersError) throw teamPlayersError;
 
     // 5. Загружаем данные статистики игроков
     const { data: playerStats, error: statsError } = await supabase
       .from('player_stats')
       .select('*');
-
     if (statsError) throw statsError;
 
     // 6. Рассчитываем очки для каждой команды
@@ -365,6 +362,7 @@ async function loadLeaderboard() {
 
         let points = 0;
         const context = { ...stat, count: stat.count || 1 };
+
         try {
           const fn = new Function(...Object.keys(context), `return (${formula});`);
           points = fn(...Object.values(context));
@@ -471,6 +469,7 @@ async function loadLeaderboard() {
     console.error('Ошибка loadLeaderboard:', e);
   }
 }
+
 
 function renderPage(page) {
   const tbody = document.getElementById('leaderboard-body');
@@ -736,6 +735,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 </script>
 </body>
 </html>
+
 
 
 
