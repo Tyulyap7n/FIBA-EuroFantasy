@@ -66,6 +66,25 @@
       opacity: 1;
       transform: translateY(0);
     }
+    
+    /* Стили для кнопки сохранения */
+    .save-status {
+      margin-left: 15px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .saving {
+      color: #2196F3;
+    }
+    
+    .saved {
+      color: #4CAF50;
+    }
+    
+    .error-status {
+      color: #f44336;
+    }
   </style>
 </head>
 <body>
@@ -209,7 +228,10 @@
       </div>
       
       <div id="team-history"></div>
-      <button id="save-roster" class="btn-yellow">Save roster</button>
+      <div style="display: flex; align-items: center; margin-top: 20px;">
+        <button id="save-roster" class="btn-yellow">Save roster</button>
+        <span id="save-status" class="save-status"></span>
+      </div>
     </div>
   </section>
 </main>
@@ -238,6 +260,13 @@ function showNotification(message, isSuccess = true) {
   }, 3000);
 }
 
+// Функция для обновления статуса сохранения
+function updateSaveStatus(message, status = '') {
+  const statusElement = document.getElementById('save-status');
+  statusElement.textContent = message;
+  statusElement.className = `save-status ${status}`;
+}
+
 // Функция для проверки дублирования игроков
 function hasDuplicatePlayers() {
   const players = Object.values(currentRoster).filter(player => player !== null);
@@ -249,9 +278,12 @@ function hasDuplicatePlayers() {
 // Функция для сохранения состава в Supabase
 async function saveRosterToDatabase() {
   try {
+    updateSaveStatus('Сохранение...', 'saving');
+    
     // Проверка на дублирование игроков
     if (hasDuplicatePlayers()) {
       showNotification('Ошибка: один игрок не может занимать несколько позиций', false);
+      updateSaveStatus('Ошибка: дублирование игроков', 'error-status');
       return false;
     }
     
@@ -259,18 +291,19 @@ async function saveRosterToDatabase() {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       showNotification('Ошибка: пользователь не авторизован', false);
+      updateSaveStatus('Ошибка: не авторизован', 'error-status');
       return false;
     }
     
-    // Формируем данные для сохранения
+    // Формируем данные для сохранения (адаптировано под вашу структуру БД)
     const rosterData = {
       user_id: user.id,
-      scorer_id: currentRoster.Scorer?.id || null,
-      assistant_id: currentRoster.Assistant?.id || null,
-      rebounder_id: currentRoster.Rebounder?.id || null,
-      stopper_id: currentRoster.Stopper?.id || null,
-      shooter_id: currentRoster.Shooter?.id || null,
-      young_id: currentRoster.Young?.id || null,
+      scorer: currentRoster.Scorer?.id || null,
+      assistant: currentRoster.Assistant?.id || null,
+      rebounder: currentRoster.Rebounder?.id || null,
+      stopper: currentRoster.Stopper?.id || null,
+      shooter: currentRoster.Shooter?.id || null,
+      young: currentRoster.Young?.id || null,
       last_updated: new Date().toISOString()
     };
     
@@ -279,7 +312,7 @@ async function saveRosterToDatabase() {
       .from('user_teams')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle(); // Используем maybeSingle вместо single
     
     let upsertError;
     if (existingTeam) {
@@ -299,15 +332,43 @@ async function saveRosterToDatabase() {
     
     if (upsertError) {
       console.error('Ошибка сохранения состава:', upsertError);
-      showNotification('Ошибка сохранения состава', false);
-      return false;
+      
+      // Попробуем альтернативный подход - сначала вставить, а если ошибка, то обновить
+      try {
+        const { error: insertError } = await supabase
+          .from('user_teams')
+          .insert([rosterData]);
+        
+        if (insertError) {
+          // Если вставка не удалась, пробуем обновление
+          const { error: updateError } = await supabase
+            .from('user_teams')
+            .update(rosterData)
+            .eq('user_id', user.id);
+          
+          if (updateError) throw updateError;
+        }
+      } catch (finalError) {
+        console.error('Финальная ошибка сохранения:', finalError);
+        showNotification('Ошибка сохранения состава. Проверьте структуру БД.', false);
+        updateSaveStatus('Ошибка сохранения', 'error-status');
+        return false;
+      }
     }
     
     showNotification('Состав успешно сохранен!');
+    updateSaveStatus('Сохранено', 'saved');
+    
+    // Через 3 секунды очищаем статус
+    setTimeout(() => {
+      updateSaveStatus('', '');
+    }, 3000);
+    
     return true;
   } catch (error) {
     console.error('Ошибка при сохранении состава:', error);
     showNotification('Ошибка сохранения состава', false);
+    updateSaveStatus('Ошибка сохранения', 'error-status');
     return false;
   }
 }
@@ -322,15 +383,24 @@ async function loadSavedRoster() {
       .from('user_teams')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle(); // Используем maybeSingle для обработки случая, когда записи нет
     
-    if (teamError || !userTeam) return;
+    if (teamError || !userTeam) {
+      console.log('Сохраненный состав не найден');
+      return;
+    }
     
     // Заполняем текущий состав из базы данных
-    const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
+    const roles = {
+      'Scorer': userTeam.scorer,
+      'Assistant': userTeam.assistant, 
+      'Rebounder': userTeam.rebounder,
+      'Stopper': userTeam.stopper,
+      'Shooter': userTeam.shooter,
+      'Young': userTeam.young
+    };
     
-    for (const role of roles) {
-      const playerId = userTeam[`${role.toLowerCase()}_id`];
+    for (const [role, playerId] of Object.entries(roles)) {
       if (playerId) {
         // Загружаем данные игрока
         const { data: player, error: playerError } = await supabase
@@ -344,6 +414,8 @@ async function loadSavedRoster() {
         }
       }
     }
+    
+    console.log('Сохраненный состав загружен');
   } catch (error) {
     console.error('Ошибка загрузки состава:', error);
   }
@@ -360,6 +432,8 @@ function scheduleAutoSave() {
   autoSaveTimeout = setTimeout(() => {
     saveRosterToDatabase();
   }, 2000);
+  
+  updateSaveStatus('Сохранение через 2 сек...', 'saving');
 }
 
 // Модифицированная функция назначения игрока на роль
@@ -436,7 +510,7 @@ async function loadTournamentRank() {
       .from('user_teams')
       .select('id, team_name')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (teamError || !userTeam) {
       console.log('Команда не найдена');
@@ -486,11 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
-});
-
-// Также обновляем рейтинг при сохранении состава
-document.getElementById('save-roster')?.addEventListener('click', function() {
-  setTimeout(loadTournamentRank, 2000); // Обновляем через 2 секунды после сохранения
 });
 </script>
 </body>
