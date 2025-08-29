@@ -84,6 +84,16 @@
       margin: 10px 0;
       font-weight: bold;
     }
+
+    .player-selected {
+      background-color: #d4edda !important;
+      border: 2px solid #28a745 !important;
+    }
+
+    .player-duplicate {
+      background-color: #f8d7da !important;
+      border: 2px solid #dc3545 !important;
+    }
   </style>
 </head>
 <body>
@@ -238,21 +248,31 @@
 
 <script>
 // Глобальные переменные для управления состоянием
-window.selectedPlayers = new Set();
-window.currentTour = 1; // Текущий тур
+window.selectedPlayers = new Map(); // Map: playerId -> role
+window.currentTour = 1;
 
 // Функция для проверки, можно ли добавить игрока
-window.canAddPlayer = function(playerId, playerName) {
+window.canAddPlayer = function(playerId, playerName, role) {
+  // Проверяем, не выбран ли уже этот игрок в другой роли
   if (window.selectedPlayers.has(playerId)) {
-    alert(`Игрок ${playerName} уже выбран в другой роли!`);
+    const existingRole = window.selectedPlayers.get(playerId);
+    alert(`Игрок ${playerName} уже выбран в роли ${existingRole.toUpperCase()}!`);
     return false;
   }
+  
+  // Проверяем, не занята ли уже эта роль другим игроком
+  const rolesArray = Array.from(window.selectedPlayers.values());
+  if (rolesArray.includes(role)) {
+    alert(`Роль ${role.toUpperCase()} уже занята другим игроком!`);
+    return false;
+  }
+  
   return true;
 }
 
 // Функция для добавления игрока в роль
 window.addPlayerToRole = function(role, playerId, playerName, playerPrice) {
-  if (!window.canAddPlayer(playerId, playerName)) {
+  if (!window.canAddPlayer(playerId, playerName, role)) {
     return false;
   }
 
@@ -263,8 +283,10 @@ window.addPlayerToRole = function(role, playerId, playerName, playerPrice) {
   emptySlot.dataset.playerId = playerId;
   emptySlot.dataset.playerName = playerName;
   emptySlot.dataset.playerPrice = playerPrice;
+  emptySlot.dataset.role = role;
   
-  window.selectedPlayers.add(playerId);
+  window.selectedPlayers.set(playerId, role);
+  updatePlayerTableStyles();
   updateSaveButtonState();
   updateBudget();
   
@@ -285,7 +307,9 @@ window.removePlayerFromRole = function(role) {
   emptySlot.dataset.playerId = '';
   emptySlot.dataset.playerName = '';
   emptySlot.dataset.playerPrice = '';
+  emptySlot.dataset.role = '';
   
+  updatePlayerTableStyles();
   updateSaveButtonState();
   updateBudget();
 }
@@ -305,16 +329,33 @@ window.resetRoster = function() {
   }
 }
 
+// Функция для обновления стилей таблицы игроков
+function updatePlayerTableStyles() {
+  const rows = document.querySelectorAll('#players-tbody tr');
+  rows.forEach(row => {
+    const playerId = row.dataset.playerId;
+    row.classList.remove('player-selected', 'player-duplicate');
+    
+    if (window.selectedPlayers.has(playerId)) {
+      row.classList.add('player-selected');
+    }
+  });
+}
+
 // Функция для обновления состояния кнопки сохранения
 function updateSaveButtonState() {
   const saveButton = document.getElementById('save-roster');
   const errorMessage = document.getElementById('error-message');
   const selectedCount = window.selectedPlayers.size;
 
-  if (selectedCount <= 5) {
+  if (selectedCount < 6) {
     saveButton.disabled = true;
     errorMessage.style.display = 'block';
-    errorMessage.textContent = `Необходимо выбрать 6 игроков. Выбрано: ${selectedCount}`;
+    errorMessage.textContent = `Необходимо выбрать 6 разных игроков. Выбрано: ${selectedCount}`;
+  } else if (selectedCount > 6) {
+    saveButton.disabled = true;
+    errorMessage.style.display = 'block';
+    errorMessage.textContent = 'Ошибка: выбрано больше 6 игроков!';
   } else {
     saveButton.disabled = false;
     errorMessage.style.display = 'none';
@@ -340,17 +381,49 @@ function updateBudget() {
 window.validateRosterBeforeSave = function() {
   const selectedCount = window.selectedPlayers.size;
   
-  if (selectedCount <= 5) {
-    alert('Необходимо выбрать 6 разных игроков для сохранения состава!');
+  if (selectedCount !== 6) {
+    alert(`Необходимо выбрать ровно 6 разных игроков! Сейчас выбрано: ${selectedCount}`);
     return false;
   }
   
-  if (selectedCount !== 6) {
-    alert('Что-то пошло не так. Пожалуйста, перезагрузите страницу и попробуйте снова.');
+  // Проверяем, что все роли уникальны
+  const roles = Array.from(window.selectedPlayers.values());
+  const uniqueRoles = new Set(roles);
+  
+  if (uniqueRoles.size !== 6) {
+    alert('Ошибка: некоторые роли дублируются!');
+    return false;
+  }
+  
+  // Проверяем, что все игроки уникальны
+  if (window.selectedPlayers.size !== 6) {
+    alert('Ошибка: найдены дублирующиеся игроки!');
     return false;
   }
   
   return true;
+}
+
+// Функция для получения данных выбранного состава
+window.getSelectedRoster = function() {
+  const roster = [];
+  const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
+  
+  roles.forEach(role => {
+    const slot = document.getElementById(`slot-${role}`);
+    const emptySlot = slot.querySelector('.empty-slot');
+    
+    if (emptySlot.dataset.playerId) {
+      roster.push({
+        role: role,
+        playerId: emptySlot.dataset.playerId,
+        playerName: emptySlot.dataset.playerName,
+        price: parseFloat(emptySlot.dataset.playerPrice) || 0
+      });
+    }
+  });
+  
+  return roster;
 }
 
 // Функция для загрузки места в турнире
@@ -409,7 +482,12 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         return false;
       }
-      // Здесь будет логика сохранения
+      
+      // Получаем состав для сохранения
+      const roster = window.getSelectedRoster();
+      console.log('Состав для сохранения:', roster);
+      
+      // Здесь будет логика сохранения в БД
       setTimeout(loadTournamentRank, 2000);
     });
   }
