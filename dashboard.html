@@ -38,62 +38,6 @@
       align-items: center;
       margin-bottom: 20px;
     }
-    
-    /* Стиль для кнопки Reset Roster */
-    .reset-roster-btn {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 20px;
-      transition: background-color 0.3s ease;
-    }
-    
-    .reset-roster-btn:hover {
-      background: #c82333;
-    }
-    
-    .reset-roster-btn:active {
-      background: #bd2130;
-    }
-
-    .reset-roster-btn:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-    }
-    
-    .buttons-container {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin: 20px 0;
-    }
-
-    /* Стиль для заблокированной кнопки сохранения */
-    .btn-yellow:disabled {
-      background: #cccccc;
-      cursor: not-allowed;
-    }
-
-    .error-message {
-      color: #dc3545;
-      text-align: center;
-      margin: 10px 0;
-      font-weight: bold;
-    }
-
-    .player-selected {
-      background-color: #d4edda !important;
-      border: 2px solid #28a745 !important;
-    }
-
-    .player-duplicate {
-      background-color: #f8d7da !important;
-      border: 2px solid #dc3545 !important;
-    }
   </style>
 </head>
 <body>
@@ -200,315 +144,120 @@
         <div class="role-slot" id="slot-Scorer">
           <div class="empty-slot">—</div>
           <div class="role-name">SCORER</div>
-          <button class="remove-btn" data-role="Scorer">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Scorer')">✕ Удалить</button>
         </div>
         
         <div class="role-slot" id="slot-Assistant">
           <div class="empty-slot">—</div>
           <div class="role-name">ASSISTANT</div>
-          <button class="remove-btn" data-role="Assistant">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Assistant')">✕ Удалить</button>
         </div>
         
         <div class="role-slot" id="slot-Rebounder">
           <div class="empty-slot">—</div>
           <div class="role-name">REBOUNDER</div>
-          <button class="remove-btn" data-role="Rebounder">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Rebounder')">✕ Удалить</button>
         </div>
         
         <div class="role-slot" id="slot-Stopper">
           <div class="empty-slot">—</div>
           <div class="role-name">STOPPER</div>
-          <button class="remove-btn" data-role="Stopper">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Stopper')">✕ Удалить</button>
         </div>
         
         <div class="role-slot" id="slot-Shooter">
           <div class="empty-slot">—</div>
           <div class="role-name">SHOOTER</div>
-          <button class="remove-btn" data-role="Shooter">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Shooter')">✕ Удалить</button>
         </div>
         
         <div class="role-slot" id="slot-Young">
           <div class="empty-slot">—</div>
           <div class="role-name">SURPRISE</div>
-          <button class="remove-btn" data-role="Young">✕ Удалить</button>
+          <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
         </div>
       </div>
 
-      <div id="error-message" class="error-message" style="display: none;"></div>
-
-      <div class="buttons-container">
-        <button id="save-roster" class="btn-yellow" disabled>Save roster</button>
-        <button id="reset-roster" class="reset-roster-btn">Reset Roster</button>
-      </div>
+      <script>
+      // Функция для удаления игрока из слота
+      function removePlayer(role) {
+        const slot = document.getElementById(`slot-${role}`);
+        const emptySlot = slot.querySelector('.empty-slot');
+        const removeBtn = slot.querySelector('.remove-btn');
+        
+        emptySlot.textContent = '—';
+        
+        console.log(`Игрок удален из роли: ${role}`);
+      }
+      </script>
       
       <div id="team-history"></div>
+      <button id="save-roster" class="btn-yellow">Save roster</button>
     </div>
   </section>
 </main>
 
 <script>
-// Глобальные переменные для управления состоянием
-window.selectedPlayers = new Map(); // Map: playerId -> role
-window.currentTour = 1;
-
-// Функция для проверки, можно ли добавить игрока
-window.canAddPlayer = function(playerId, playerName, role) {
-  // Проверяем, не выбран ли уже этот игрок в другой роли
-  if (window.selectedPlayers.has(playerId)) {
-    const existingRole = window.selectedPlayers.get(playerId);
-    alert(`Игрок ${playerName} уже выбран в роли ${existingRole.toUpperCase()}!`);
-    return false;
-  }
-  
-  // Проверяем, не занята ли уже эта роль другим игроком
-  const rolesArray = Array.from(window.selectedPlayers.values());
-  if (rolesArray.includes(role)) {
-    alert(`Роль ${role.toUpperCase()} уже занята другим игроком!`);
-    return false;
-  }
-  
-  return true;
-}
-
-// Функция для добавления игрока в роль
-window.addPlayerToRole = function(role, playerId, playerName, playerPrice) {
-  if (!window.canAddPlayer(playerId, playerName, role)) {
-    return false;
-  }
-
-  const slot = document.getElementById(`slot-${role}`);
-  const emptySlot = slot.querySelector('.empty-slot');
-  
-  emptySlot.textContent = playerName;
-  emptySlot.dataset.playerId = playerId;
-  emptySlot.dataset.playerName = playerName;
-  emptySlot.dataset.playerPrice = playerPrice;
-  emptySlot.dataset.role = role;
-  
-  window.selectedPlayers.set(playerId, role);
-  updatePlayerTableStyles();
-  updateSaveButtonState();
-  updateBudget();
-  
-  return true;
-}
-
-// Функция для удаления игрока из роли
-window.removePlayerFromRole = function(role) {
-  const slot = document.getElementById(`slot-${role}`);
-  const emptySlot = slot.querySelector('.empty-slot');
-  const playerId = emptySlot.dataset.playerId;
-  
-  if (playerId) {
-    window.selectedPlayers.delete(playerId);
-  }
-  
-  emptySlot.textContent = '—';
-  emptySlot.dataset.playerId = '';
-  emptySlot.dataset.playerName = '';
-  emptySlot.dataset.playerPrice = '';
-  emptySlot.dataset.role = '';
-  
-  updatePlayerTableStyles();
-  updateSaveButtonState();
-  updateBudget();
-}
-
-// Функция для полного сброса состава
-window.resetRoster = function() {
-  if (confirm('Вы уверены, что хотите полностью очистить состав? Все выбранные игроки будут удалены.')) {
-    const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
-    
-    roles.forEach(role => {
-      window.removePlayerFromRole(role);
-    });
-    
-    window.selectedPlayers.clear();
-    updateSaveButtonState();
-    alert('Состав полностью очищен!');
-  }
-}
-
-// Функция для обновления стилей таблицы игроков
-function updatePlayerTableStyles() {
-  const rows = document.querySelectorAll('#players-tbody tr');
-  rows.forEach(row => {
-    const playerId = row.dataset.playerId;
-    row.classList.remove('player-selected', 'player-duplicate');
-    
-    if (window.selectedPlayers.has(playerId)) {
-      row.classList.add('player-selected');
-    }
-  });
-}
-
-// Функция для обновления состояния кнопки сохранения
-function updateSaveButtonState() {
-  const saveButton = document.getElementById('save-roster');
-  const errorMessage = document.getElementById('error-message');
-  const selectedCount = window.selectedPlayers.size;
-
-  if (selectedCount < 6) {
-    saveButton.disabled = true;
-    errorMessage.style.display = 'block';
-    errorMessage.textContent = `Необходимо выбрать 6 разных игроков. Выбрано: ${selectedCount}`;
-  } else if (selectedCount > 6) {
-    saveButton.disabled = true;
-    errorMessage.style.display = 'block';
-    errorMessage.textContent = 'Ошибка: выбрано больше 6 игроков!';
-  } else {
-    saveButton.disabled = false;
-    errorMessage.style.display = 'none';
-  }
-}
-
-// Функция для обновления бюджета
-function updateBudget() {
-  let totalSpent = 0;
-  const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
-  
-  roles.forEach(role => {
-    const slot = document.getElementById(`slot-${role}`);
-    const emptySlot = slot.querySelector('.empty-slot');
-    const price = parseFloat(emptySlot.dataset.playerPrice) || 0;
-    totalSpent += price;
-  });
-  
-  document.getElementById('spent-money').textContent = totalSpent.toFixed(1);
-}
-
-// Функция для проверки перед сохранением
-window.validateRosterBeforeSave = function() {
-  const selectedCount = window.selectedPlayers.size;
-  
-  if (selectedCount !== 6) {
-    alert(`Необходимо выбрать ровно 6 разных игроков! Сейчас выбрано: ${selectedCount}`);
-    return false;
-  }
-  
-  // Проверяем, что все роли уникальны
-  const roles = Array.from(window.selectedPlayers.values());
-  const uniqueRoles = new Set(roles);
-  
-  if (uniqueRoles.size !== 6) {
-    alert('Ошибка: некоторые роли дублируются!');
-    return false;
-  }
-  
-  // Проверяем, что все игроки уникальны
-  if (window.selectedPlayers.size !== 6) {
-    alert('Ошибка: найдены дублирующиеся игроки!');
-    return false;
-  }
-  
-  return true;
-}
-
-// Функция для получения данных выбранного состава
-window.getSelectedRoster = function() {
-  const roster = [];
-  const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
-  
-  roles.forEach(role => {
-    const slot = document.getElementById(`slot-${role}`);
-    const emptySlot = slot.querySelector('.empty-slot');
-    
-    if (emptySlot.dataset.playerId) {
-      roster.push({
-        role: role,
-        playerId: emptySlot.dataset.playerId,
-        playerName: emptySlot.dataset.playerName,
-        price: parseFloat(emptySlot.dataset.playerPrice) || 0
-      });
-    }
-  });
-  
-  return roster;
-}
-
 // Функция для загрузки места в турнире
 async function loadTournamentRank() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Получаем текущего пользователя
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.log('Пользователь не авторизован');
       document.getElementById('tournament-rank').textContent = 'Место: не авторизован';
       return;
     }
 
-    const { data: userTeam } = await supabase
+    // Получаем команду пользователя
+    const { data: userTeam, error: teamError } = await supabase
       .from('user_teams')
       .select('id, team_name')
       .eq('user_id', user.id)
       .single();
 
-    if (!userTeam) {
+    if (teamError || !userTeam) {
+      console.log('Команда не найдена');
       document.getElementById('tournament-rank').textContent = 'Место: команда не создана';
       return;
     }
 
-    const { data: allTeams } = await supabase
+    // Загружаем все команды для расчета рейтинга
+    const { data: allTeams, error: teamsError } = await supabase
       .from('user_teams')
       .select('id, team_name');
 
-    const randomRank = Math.floor(Math.random() * (allTeams?.length || 100)) + 1;
+    if (teamsError) {
+      console.error('Ошибка загрузки команд:', teamsError);
+      document.getElementById('tournament-rank').textContent = 'Место: ошибка';
+      return;
+    }
+
+    // Здесь должна быть логика расчета очков для всех команд
+    // Для примера просто показываем фиктивное место
+    // В реальности нужно реализовать расчет очков как в leaderboard
+    
+    const userTeamId = userTeam.id;
+    const randomRank = Math.floor(Math.random() * (allTeams.length || 100)) + 1;
+    
     document.getElementById('tournament-rank').textContent = `Место: ${randomRank}`;
     
   } catch (error) {
+    console.error('Ошибка загрузки рейтинга:', error);
     document.getElementById('tournament-rank').textContent = 'Место: ошибка';
   }
 }
 
-// Инициализация при загрузке страницы
+// Загружаем рейтинг при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-  // Обработчики для кнопок удаления
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const role = this.dataset.role;
-      window.removePlayerFromRole(role);
-    });
-  });
-
-  // Обработчик для кнопки Reset Roster
-  const resetButton = document.getElementById('reset-roster');
-  if (resetButton) {
-    resetButton.addEventListener('click', window.resetRoster);
-  }
-
-  // Обработчик для кнопки Save Roster
-  const saveButton = document.getElementById('save-roster');
-  if (saveButton) {
-    saveButton.addEventListener('click', function(e) {
-      if (!window.validateRosterBeforeSave()) {
-        e.preventDefault();
-        return false;
-      }
-      
-      // Получаем состав для сохранения
-      const roster = window.getSelectedRoster();
-      console.log('Состав для сохранения:', roster);
-      
-      // Здесь будет логика сохранения в БД
-      setTimeout(loadTournamentRank, 2000);
-    });
-  }
-
-  // Загружаем рейтинг
+  // Ждем инициализации Supabase
   setTimeout(loadTournamentRank, 1000);
-  
-  // Инициализируем состояние кнопки
-  updateSaveButtonState();
 });
 
-// Переопределяем стандартную функцию сохранения (если она есть в script.js)
-if (typeof window.saveRoster === 'function') {
-  const originalSaveRoster = window.saveRoster;
-  window.saveRoster = function() {
-    if (!window.validateRosterBeforeSave()) {
-      return false;
-    }
-    return originalSaveRoster.apply(this, arguments);
-  };
-}
+// Также обновляем рейтинг при сохранении состава
+document.getElementById('save-roster')?.addEventListener('click', function() {
+  setTimeout(loadTournamentRank, 2000); // Обновляем через 2 секунды после сохранения
+});
 </script>
 </body>
 </html>
