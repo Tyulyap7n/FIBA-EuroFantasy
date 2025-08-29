@@ -626,7 +626,21 @@ async function loadTournamentRank() {
       return;
     }
 
-    // Загружаем все команды для расчета рейтинга
+    // Получаем текущий тур
+    const { data: currentTour, error: tourError } = await supabase
+      .from('tours')
+      .select('id')
+      .order('start_time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (tourError || !currentTour) {
+      console.error('Ошибка получения текущего тура:', tourError);
+      document.getElementById('tournament-rank').textContent = 'Место: ошибка тура';
+      return;
+    }
+
+    // Получаем все команды и их составы для текущего тура
     const { data: allTeams, error: teamsError } = await supabase
       .from('user_teams')
       .select('id, team_name');
@@ -637,20 +651,81 @@ async function loadTournamentRank() {
       return;
     }
 
-    // Здесь должна быть логика расчета очков для всех команд
-    // Для примера просто показываем фиктивное место
-    // В реальности нужно реализовать расчет очков как в leaderboard
-    
-    const userTeamId = userTeam.id;
-    const randomRank = Math.floor(Math.random() * (allTeams.length || 100)) + 1;
-    
-    document.getElementById('tournament-rank').textContent = `Место: ${randomRank}`;
-    
+    // Для каждой команды получаем её состав и рассчитываем очки
+    const teamScores = [];
+
+    for (const team of allTeams) {
+      // Получаем состав команды для текущего тура
+      const { data: teamPlayers, error: teamPlayersError } = await supabase
+        .from('team_players')
+        .select('player_id, role_id')
+        .eq('team_id', team.id)
+        .eq('tour_id', currentTour.id);
+
+      if (teamPlayersError) {
+        console.error(`Ошибка загрузки состава команды ${team.id}:`, teamPlayersError);
+        continue;
+      }
+
+      // Рассчитываем очки для команды
+      let totalScore = 0;
+
+      for (const { player_id } of teamPlayers) {
+        // Получаем статистику игрока за текущий тур
+        const { data: playerStats, error: statsError } = await supabase
+          .from('player_stats')
+          .select('points, threes, assists, rebounds, blocks, steals, turnover')
+          .eq('player_id', player_id)
+          .eq('tour', currentTour.id)
+          .maybeSingle();
+
+        if (statsError) {
+          console.error(`Ошибка загрузки статистики игрока ${player_id}:`, statsError);
+          continue;
+        }
+
+        // Рассчитываем очки игрока по формуле (замените на свою логику)
+        if (playerStats) {
+          const playerScore =
+            playerStats.points * 1 +
+            playerStats.threes * 1 +
+            playerStats.assists * 2 +
+            playerStats.rebounds * 1.5 +
+            playerStats.blocks * 2 +
+            playerStats.steals * 2 -
+            playerStats.turnover * 1;
+
+          totalScore += playerScore;
+        }
+      }
+
+      teamScores.push({
+        teamId: team.id,
+        teamName: team.team_name,
+        score: totalScore,
+      });
+    }
+
+    // Сортируем команды по убыванию очков
+    teamScores.sort((a, b) => b.score - a.score);
+
+    // Находим место команды пользователя
+    const userTeamIndex = teamScores.findIndex(team => team.teamId === userTeam.id);
+
+    if (userTeamIndex === -1) {
+      document.getElementById('tournament-rank').textContent = 'Место: не участвует';
+      return;
+    }
+
+    const userTeamRank = userTeamIndex + 1;
+
+    document.getElementById('tournament-rank').textContent = `Место: ${userTeamRank}`;
   } catch (error) {
     console.error('Ошибка загрузки рейтинга:', error);
     document.getElementById('tournament-rank').textContent = 'Место: ошибка';
   }
 }
+
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
@@ -672,5 +747,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
 
