@@ -279,14 +279,14 @@ function hasDuplicatePlayers() {
 async function saveRosterToDatabase() {
   try {
     updateSaveStatus('Сохранение...', 'saving');
-    
+
     // Проверка на дублирование игроков
     if (hasDuplicatePlayers()) {
       showNotification('Ошибка: один игрок не может занимать несколько позиций', false);
       updateSaveStatus('Ошибка: дублирование игроков', 'error-status');
       return false;
     }
-    
+
     // Получаем текущего пользователя
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -294,76 +294,133 @@ async function saveRosterToDatabase() {
       updateSaveStatus('Ошибка: не авторизован', 'error-status');
       return false;
     }
-    
-    // Формируем данные для сохранения (адаптировано под вашу структуру БД)
-    const rosterData = {
-      user_id: user.id,
-      scorer: currentRoster.Scorer?.id || null,
-      assistant: currentRoster.Assistant?.id || null,
-      rebounder: currentRoster.Rebounder?.id || null,
-      stopper: currentRoster.Stopper?.id || null,
-      shooter: currentRoster.Shooter?.id || null,
-      young: currentRoster.Young?.id || null,
-      last_updated: new Date().toISOString()
-    };
-    
-    // Проверяем, существует ли уже запись для этого пользователя
+
+    // Проверяем, существует ли команда пользователя
+    let teamId;
     const { data: existingTeam, error: fetchError } = await supabase
       .from('user_teams')
       .select('id')
       .eq('user_id', user.id)
-      .maybeSingle(); // Используем maybeSingle вместо single
-    
-    let upsertError;
-    if (existingTeam) {
-      // Обновляем существующую запись
-      const { error } = await supabase
-        .from('user_teams')
-        .update(rosterData)
-        .eq('user_id', user.id);
-      upsertError = error;
-    } else {
-      // Создаем новую запись
-      const { error } = await supabase
-        .from('user_teams')
-        .insert([rosterData]);
-      upsertError = error;
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Ошибка получения команды:', fetchError);
+      showNotification('Ошибка получения команды', false);
+      updateSaveStatus('Ошибка получения команды', 'error-status');
+      return false;
     }
-    
-    if (upsertError) {
-      console.error('Ошибка сохранения состава:', upsertError);
-      
-      // Попробуем альтернативный подход - сначала вставить, а если ошибка, то обновить
-      try {
-        const { error: insertError } = await supabase
-          .from('user_teams')
-          .insert([rosterData]);
-        
-        if (insertError) {
-          // Если вставка не удалась, пробуем обновление
-          const { error: updateError } = await supabase
-            .from('user_teams')
-            .update(rosterData)
-            .eq('user_id', user.id);
-          
-          if (updateError) throw updateError;
-        }
-      } catch (finalError) {
-        console.error('Финальная ошибка сохранения:', finalError);
-        showNotification('Ошибка сохранения состава. Проверьте структуру БД.', false);
-        updateSaveStatus('Ошибка сохранения', 'error-status');
+
+    // Если команды нет, создаём её
+    if (!existingTeam) {
+      const { data: newTeam, error: insertError } = await supabase
+        .from('user_teams')
+        .insert([{ user_id: user.id, team_name: `Команда ${user.id}` }])
+        .select('id')
+        .single();
+
+      if (insertError) {
+        console.error('Ошибка создания команды:', insertError);
+        showNotification('Ошибка создания команды', false);
+        updateSaveStatus('Ошибка создания команды', 'error-status');
         return false;
       }
+
+      teamId = newTeam.id;
+    } else {
+      teamId = existingTeam.id;
     }
-    
+
+    // Получаем текущий тур (например, последний активный тур)
+    const { data: currentTour, error: tourError } = await supabase
+      .from('tours')
+      .select('id')
+      .order('start_time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (tourError || !currentTour) {
+      console.error('Ошибка получения текущего тура:', tourError);
+      showNotification('Ошибка получения текущего тура', false);
+      updateSaveStatus('Ошибка получения тура', 'error-status');
+      return false;
+    }
+
+    // Очищаем старые связи для этой команды и тура
+    const { error: deleteError } = await supabase
+      .from('team_players')
+      .delete()
+      .eq('team_id', teamId)
+      .eq('tour_id', currentTour.id);
+
+    if (deleteError) {
+      console.error('Ошибка очистки старых связей:', deleteError);
+      showNotification('Ошибка очистки старых связей', false);
+      updateSaveStatus('Ошибка очистки связей', 'error-status');
+      return false;
+    }
+
+    // Сохраняем новые связи для каждой роли
+    const roles = [
+      { roleName: 'Scorer', playerId: currentRoster.Scorer?.id },
+      { roleName: 'Assistant', playerId: currentRoster.Assistant?.id },
+      { roleName: 'Rebounder', playerId: currentRoster.Rebounder?.id },
+      { roleName: 'Stopper', playerId: currentRoster.Stopper?.id },
+      { roleName: 'Shooter', playerId: currentRoster.Shooter?.id },
+      { roleName: 'Young', playerId: currentRoster.Young?.id },
+    ];
+
+    // Получаем ID ролей из таблицы roles
+    const { data: rolesData, error: rolesError } = await supabase
+      .from('roles')
+      .select('id, name');
+
+    if (rolesError) {
+      console.error('Ошибка получения ролей:', rolesError);
+      showNotification('Ошибка получения ролей', false);
+      updateSaveStatus('Ошибка получения ролей', 'error-status');
+      return false;
+    }
+
+    // Создаём массив для новых связей
+    const teamPlayers = [];
+
+    for (const { roleName, playerId } of roles) {
+      if (!playerId) continue;
+
+      // Находим ID роли по её имени
+      const role = rolesData.find(r => r.name === roleName);
+      if (!role) {
+        console.error(`Роль ${roleName} не найдена`);
+        continue;
+      }
+
+      teamPlayers.push({
+        team_id: teamId,
+        player_id: playerId,
+        role_id: role.id,
+        tour_id: currentTour.id,
+      });
+    }
+
+    // Сохраняем новые связи
+    const { error: insertTeamPlayersError } = await supabase
+      .from('team_players')
+      .insert(teamPlayers);
+
+    if (insertTeamPlayersError) {
+      console.error('Ошибка сохранения связей:', insertTeamPlayersError);
+      showNotification('Ошибка сохранения связей', false);
+      updateSaveStatus('Ошибка сохранения связей', 'error-status');
+      return false;
+    }
+
     showNotification('Состав успешно сохранен!');
     updateSaveStatus('Сохранено', 'saved');
-    
-    // Через 3 секунды очищаем статус
+
     setTimeout(() => {
       updateSaveStatus('', '');
     }, 3000);
-    
+
     return true;
   } catch (error) {
     console.error('Ошибка при сохранении состава:', error);
@@ -372,6 +429,7 @@ async function saveRosterToDatabase() {
     return false;
   }
 }
+
 
 // Функция для загрузки сохраненного состава
 async function loadSavedRoster() {
@@ -564,3 +622,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
