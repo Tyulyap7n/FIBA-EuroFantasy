@@ -297,14 +297,14 @@ async function saveRosterToDatabase() {
 
     // Проверяем, существует ли команда пользователя
     let teamId;
-    const { data: existingTeam, error: fetchError } = await supabase
+    const { data: existingTeam, error: fetchTeamError } = await supabase
       .from('user_teams')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (fetchError) {
-      console.error('Ошибка получения команды:', fetchError);
+    if (fetchTeamError) {
+      console.error('Ошибка получения команды:', fetchTeamError);
       showNotification('Ошибка получения команды', false);
       updateSaveStatus('Ошибка получения команды', 'error-status');
       return false;
@@ -312,14 +312,14 @@ async function saveRosterToDatabase() {
 
     // Если команды нет, создаём её
     if (!existingTeam) {
-      const { data: newTeam, error: insertError } = await supabase
+      const { data: newTeam, error: createTeamError } = await supabase
         .from('user_teams')
         .insert([{ user_id: user.id, team_name: `Команда ${user.id}` }])
         .select('id')
         .single();
 
-      if (insertError) {
-        console.error('Ошибка создания команды:', insertError);
+      if (createTeamError) {
+        console.error('Ошибка создания команды:', createTeamError);
         showNotification('Ошибка создания команды', false);
         updateSaveStatus('Ошибка создания команды', 'error-status');
         return false;
@@ -330,18 +330,30 @@ async function saveRosterToDatabase() {
       teamId = existingTeam.id;
     }
 
-    // Получаем текущий тур (например, последний активный тур)
-    const { data: currentTour, error: tourError } = await supabase
+    // Получаем текущий тур
+    const { data: currentTour, error: fetchTourError } = await supabase
       .from('tours')
       .select('id')
       .order('start_time', { ascending: false })
       .limit(1)
       .single();
 
-    if (tourError || !currentTour) {
-      console.error('Ошибка получения текущего тура:', tourError);
+    if (fetchTourError || !currentTour) {
+      console.error('Ошибка получения текущего тура:', fetchTourError);
       showNotification('Ошибка получения текущего тура', false);
       updateSaveStatus('Ошибка получения тура', 'error-status');
+      return false;
+    }
+
+    // Получаем все роли из таблицы roles
+    const { data: roles, error: fetchRolesError } = await supabase
+      .from('roles')
+      .select('id, name');
+
+    if (fetchRolesError || !roles) {
+      console.error('Ошибка получения ролей:', fetchRolesError);
+      showNotification('Ошибка получения ролей', false);
+      updateSaveStatus('Ошибка получения ролей', 'error-status');
       return false;
     }
 
@@ -359,48 +371,86 @@ async function saveRosterToDatabase() {
       return false;
     }
 
-    // Сохраняем новые связи для каждой роли
-    const roles = [
-      { roleName: 'Scorer', playerId: currentRoster.Scorer?.id },
-      { roleName: 'Assistant', playerId: currentRoster.Assistant?.id },
-      { roleName: 'Rebounder', playerId: currentRoster.Rebounder?.id },
-      { roleName: 'Stopper', playerId: currentRoster.Stopper?.id },
-      { roleName: 'Shooter', playerId: currentRoster.Shooter?.id },
-      { roleName: 'Young', playerId: currentRoster.Young?.id },
-    ];
-
-    // Получаем ID ролей из таблицы roles
-    const { data: rolesData, error: rolesError } = await supabase
-      .from('roles')
-      .select('id, name');
-
-    if (rolesError) {
-      console.error('Ошибка получения ролей:', rolesError);
-      showNotification('Ошибка получения ролей', false);
-      updateSaveStatus('Ошибка получения ролей', 'error-status');
-      return false;
-    }
-
-    // Создаём массив для новых связей
+    // Формируем массив для новых связей
     const teamPlayers = [];
 
-    for (const { roleName, playerId } of roles) {
-      if (!playerId) continue;
+    // Проверяем каждую роль
+    const roleMappings = [
+      { roleName: 'Scorer', player: currentRoster.Scorer },
+      { roleName: 'Assistant', player: currentRoster.Assistant },
+      { roleName: 'Rebounder', player: currentRoster.Rebounder },
+      { roleName: 'Stopper', player: currentRoster.Stopper },
+      { roleName: 'Shooter', player: currentRoster.Shooter },
+      { roleName: 'Young', player: currentRoster.Young },
+    ];
+
+    for (const { roleName, player } of roleMappings) {
+      if (!player) continue;
 
       // Находим ID роли по её имени
-      const role = rolesData.find(r => r.name === roleName);
+      const role = roles.find(r => r.name === roleName);
       if (!role) {
-        console.error(`Роль ${roleName} не найдена`);
+        console.error(`Роль ${roleName} не найдена в базе данных`);
         continue;
       }
 
+      // Проверяем, что игрок существует в базе данных
+      const { data: playerExists, error: playerError } = await supabase
+        .from('players')
+        .select('id')
+        .eq('id', player.id)
+        .maybeSingle();
+
+      if (playerError || !playerExists) {
+        console.error(`Игрок с ID ${player.id} не найден в базе данных`);
+        continue;
+      }
+
+      // Добавляем связь в массив
       teamPlayers.push({
         team_id: teamId,
-        player_id: playerId,
+        player_id: player.id,
         role_id: role.id,
         tour_id: currentTour.id,
       });
     }
+
+    // Проверяем, что массив не пустой
+    if (teamPlayers.length === 0) {
+      showNotification('Ошибка: нет игроков для сохранения', false);
+      updateSaveStatus('Ошибка: нет игроков', 'error-status');
+      return false;
+    }
+
+    // Сохраняем новые связи
+    const { error: insertError } = await supabase
+      .from('team_players')
+      .insert(teamPlayers);
+
+    if (insertError) {
+      console.error('Ошибка сохранения связей:', insertError);
+      showNotification(`Ошибка сохранения: ${insertError.message}`, false);
+      updateSaveStatus('Ошибка сохранения', 'error-status');
+      return false;
+    }
+
+    // Успешное сохранение
+    showNotification('Состав успешно сохранен!');
+    updateSaveStatus('Сохранено', 'saved');
+
+    setTimeout(() => {
+      updateSaveStatus('', '');
+    }, 3000);
+
+    return true;
+  } catch (error) {
+    console.error('Непредвиденная ошибка:', error);
+    showNotification('Непредвиденная ошибка при сохранении', false);
+    updateSaveStatus('Ошибка сохранения', 'error-status');
+    return false;
+  }
+}
+
 
     // Сохраняем новые связи
     const { error: insertTeamPlayersError } = await supabase
@@ -622,4 +672,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
