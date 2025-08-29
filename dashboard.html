@@ -38,6 +38,34 @@
       align-items: center;
       margin-bottom: 20px;
     }
+    
+    /* Стили для уведомлений */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .notification.success {
+      background-color: #4CAF50;
+    }
+    
+    .notification.error {
+      background-color: #f44336;
+    }
+    
+    .notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -53,6 +81,8 @@
   </div>
 </header>
 
+<!-- Контейнер для уведомлений -->
+<div id="notification" class="notification"></div>
 
 <main class="page">
   <!-- RULES -->
@@ -177,19 +207,6 @@
           <button class="remove-btn" onclick="removePlayer('Young')">✕ Удалить</button>
         </div>
       </div>
-
-      <script>
-      // Функция для удаления игрока из слота
-      function removePlayer(role) {
-        const slot = document.getElementById(`slot-${role}`);
-        const emptySlot = slot.querySelector('.empty-slot');
-        const removeBtn = slot.querySelector('.remove-btn');
-        
-        emptySlot.textContent = '—';
-        
-        console.log(`Игрок удален из роли: ${role}`);
-      }
-      </script>
       
       <div id="team-history"></div>
       <button id="save-roster" class="btn-yellow">Save roster</button>
@@ -198,6 +215,211 @@
 </main>
 
 <script>
+// Глобальные переменные для хранения данных
+let currentRoster = {
+  Scorer: null,
+  Assistant: null,
+  Rebounder: null,
+  Stopper: null,
+  Shooter: null,
+  Young: null
+};
+let autoSaveTimeout = null;
+
+// Функция для отображения уведомлений
+function showNotification(message, isSuccess = true) {
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+  notification.classList.add('show');
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+  }, 3000);
+}
+
+// Функция для проверки дублирования игроков
+function hasDuplicatePlayers() {
+  const players = Object.values(currentRoster).filter(player => player !== null);
+  const playerIds = players.map(player => player.id);
+  
+  return new Set(playerIds).size !== players.length;
+}
+
+// Функция для сохранения состава в Supabase
+async function saveRosterToDatabase() {
+  try {
+    // Проверка на дублирование игроков
+    if (hasDuplicatePlayers()) {
+      showNotification('Ошибка: один игрок не может занимать несколько позиций', false);
+      return false;
+    }
+    
+    // Получаем текущего пользователя
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      showNotification('Ошибка: пользователь не авторизован', false);
+      return false;
+    }
+    
+    // Формируем данные для сохранения
+    const rosterData = {
+      user_id: user.id,
+      scorer_id: currentRoster.Scorer?.id || null,
+      assistant_id: currentRoster.Assistant?.id || null,
+      rebounder_id: currentRoster.Rebounder?.id || null,
+      stopper_id: currentRoster.Stopper?.id || null,
+      shooter_id: currentRoster.Shooter?.id || null,
+      young_id: currentRoster.Young?.id || null,
+      last_updated: new Date().toISOString()
+    };
+    
+    // Проверяем, существует ли уже запись для этого пользователя
+    const { data: existingTeam, error: fetchError } = await supabase
+      .from('user_teams')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+    
+    let upsertError;
+    if (existingTeam) {
+      // Обновляем существующую запись
+      const { error } = await supabase
+        .from('user_teams')
+        .update(rosterData)
+        .eq('user_id', user.id);
+      upsertError = error;
+    } else {
+      // Создаем новую запись
+      const { error } = await supabase
+        .from('user_teams')
+        .insert([rosterData]);
+      upsertError = error;
+    }
+    
+    if (upsertError) {
+      console.error('Ошибка сохранения состава:', upsertError);
+      showNotification('Ошибка сохранения состава', false);
+      return false;
+    }
+    
+    showNotification('Состав успешно сохранен!');
+    return true;
+  } catch (error) {
+    console.error('Ошибка при сохранении состава:', error);
+    showNotification('Ошибка сохранения состава', false);
+    return false;
+  }
+}
+
+// Функция для загрузки сохраненного состава
+async function loadSavedRoster() {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return;
+    
+    const { data: userTeam, error: teamError } = await supabase
+      .from('user_teams')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (teamError || !userTeam) return;
+    
+    // Заполняем текущий состав из базы данных
+    const roles = ['Scorer', 'Assistant', 'Rebounder', 'Stopper', 'Shooter', 'Young'];
+    
+    for (const role of roles) {
+      const playerId = userTeam[`${role.toLowerCase()}_id`];
+      if (playerId) {
+        // Загружаем данные игрока
+        const { data: player, error: playerError } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', playerId)
+          .single();
+        
+        if (!playerError && player) {
+          assignPlayerToRole(player, role, false); // false - не сохранять автоматически
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки состава:', error);
+  }
+}
+
+// Функция для отложенного автоматического сохранения
+function scheduleAutoSave() {
+  // Очищаем предыдущий таймер
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout);
+  }
+  
+  // Устанавливаем новый таймер на 2 секунды
+  autoSaveTimeout = setTimeout(() => {
+    saveRosterToDatabase();
+  }, 2000);
+}
+
+// Модифицированная функция назначения игрока на роль
+function assignPlayerToRole(player, role, autoSave = true) {
+  // Проверяем, не выбран ли уже этот игрок в другой позиции
+  for (const [r, p] of Object.entries(currentRoster)) {
+    if (p && p.id === player.id && r !== role) {
+      showNotification('Этот игрок уже выбран на другой позиции', false);
+      return false;
+    }
+  }
+  
+  // Обновляем текущий состав
+  currentRoster[role] = player;
+  
+  // Обновляем UI
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+  emptySlot.textContent = `${player.name} (${player.team})`;
+  
+  // Пересчитываем бюджет
+  updateBudget();
+  
+  // Если autoSave=true, планируем автоматическое сохранение
+  if (autoSave) {
+    scheduleAutoSave();
+  }
+  
+  return true;
+}
+
+// Модифицированная функция удаления игрока из слота
+function removePlayer(role) {
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+  
+  // Обновляем текущий состав
+  currentRoster[role] = null;
+  emptySlot.textContent = '—';
+  
+  // Пересчитываем бюджет
+  updateBudget();
+  
+  // Планируем автоматическое сохранение
+  scheduleAutoSave();
+  
+  console.log(`Игрок удален из роли: ${role}`);
+}
+
+// Функция для обновления отображения бюджета
+function updateBudget() {
+  let totalSpent = 0;
+  for (const player of Object.values(currentRoster)) {
+    if (player) {
+      totalSpent += player.price;
+    }
+  }
+  document.getElementById('spent-money').textContent = totalSpent;
+}
+
 // Функция для загрузки места в турнире
 async function loadTournamentRank() {
   try {
@@ -248,10 +470,22 @@ async function loadTournamentRank() {
   }
 }
 
-// Загружаем рейтинг при загрузке страницы
+// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-  // Ждем инициализации Supabase
-  setTimeout(loadTournamentRank, 1000);
+  // Загружаем сохраненный состав
+  setTimeout(() => {
+    loadSavedRoster();
+    loadTournamentRank();
+  }, 1000);
+  
+  // Обработчик для кнопки ручного сохранения
+  document.getElementById('save-roster')?.addEventListener('click', function() {
+    saveRosterToDatabase().then(success => {
+      if (success) {
+        setTimeout(loadTournamentRank, 1000);
+      }
+    });
+  });
 });
 
 // Также обновляем рейтинг при сохранении состава
