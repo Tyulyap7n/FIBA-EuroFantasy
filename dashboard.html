@@ -572,25 +572,6 @@ function assignPlayerToRole(player, role, autoSave = true) {
   
   return true;
 }
-
-// Модифицированная функция удаления игрока из слота
-function removePlayer(role) {
-  const slot = document.getElementById(`slot-${role}`);
-  const emptySlot = slot.querySelector('.empty-slot');
-  
-  // Обновляем текущий состав
-  currentRoster[role] = null;
-  emptySlot.textContent = '—';
-  
-  // Пересчитываем бюджет
-  updateBudget();
-  
-  // Планируем автоматическое сохранение
-  scheduleAutoSave();
-  
-  console.log(`Игрок удален из роли: ${role}`);
-}
-
 // Функция для обновления отображения бюджета
 function updateBudget() {
   let totalSpent = 0;
@@ -602,53 +583,11 @@ function updateBudget() {
   document.getElementById('spent-money').textContent = totalSpent;
 }
 
-// Функция для загрузки места в турнире
-async function loadTournamentRank() {
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      console.log("Пользователь не авторизован");
-      document.getElementById("tournament-rank").textContent = "Место: не авторизован";
-      return;
-    }
-
-    const response = await fetch(
-      "https://<your-project-ref>.supabase.co/functions/v1/get_team_rank",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${supabase.accessToken}`,
-        },
-        body: JSON.stringify({ userId: user.id }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Ошибка получения рейтинга");
-    }
-
-    const data = await response.json();
-
-    if (data.rank) {
-      document.getElementById("tournament-rank").textContent = `Место: ${data.rank}`;
-    } else {
-      document.getElementById("tournament-rank").textContent = data.message || "Место: не определено";
-    }
-  } catch (error) {
-    console.error("Ошибка загрузки рейтинга:", error);
-    document.getElementById("tournament-rank").textContent = "Место: ошибка";
-  }
-}
-
-
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   // Загружаем сохраненный состав
   setTimeout(() => {
     loadSavedRoster();
-    loadTournamentRank();
   }, 1000);
   
   // Обработчик для кнопки ручного сохранения
@@ -663,6 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
 
 
