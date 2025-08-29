@@ -18,20 +18,51 @@
   <!-- no-op (оставлен) -->
   <script src="dashboard.js" defer></script>
   <style>
-    /* Стиль для отображения места в турнире */
-    .tournament-rank {
-      position: absolute;
-      right: 20px;
-      top: 10px;
-      background: var(--yellow);
-      color: black;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 1.1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    
+  .role-slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    min-width: 120px;
+    min-height: 100px;
+  }
+
+  .empty-slot {
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+
+  .role-name {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 0;
+    padding: 5px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+    line-height: 10px;
+  }
+
+  .role-slot:hover .remove-btn {
+    display: block;
+  }
     .starting-vi-container {
       position: relative;
       display: flex;
@@ -578,7 +609,7 @@ function scheduleAutoSave() {
 
 // Модифицированная функция назначения игрока на роль
 function assignPlayerToRole(player, role, autoSave = true) {
-  // Проверяем, не выбран ли уже этот игрок в другой позиции
+  // Проверка на дублирование игроков
   for (const [r, p] of Object.entries(currentRoster)) {
     if (p && p.id === player.id && r !== role) {
       showNotification('Этот игрок уже выбран на другой позиции', false);
@@ -604,6 +635,7 @@ function assignPlayerToRole(player, role, autoSave = true) {
 
   return true;
 }
+
 
 // Функция для обновления отображения бюджета
 function updateBudget() {
@@ -635,6 +667,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
 
 
