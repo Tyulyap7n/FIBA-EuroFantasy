@@ -38,7 +38,23 @@
       align-items: center;
       margin-bottom: 20px;
     }
-    
+      .remove-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+  }
+  .role-slot:hover .remove-btn {
+    display: block;
+  }
     /* Стили для уведомлений */
     .notification {
       position: fixed;
@@ -189,37 +205,44 @@
       </div>
 
       <div class="roles-lineup">
-        <div class="role-slot" id="slot-Scorer">
-          <div class="empty-slot">—</div>
-          <div class="role-name">SCORER</div>
-        </div>
-        
-        <div class="role-slot" id="slot-Assistant">
-          <div class="empty-slot">—</div>
-          <div class="role-name">ASSISTANT</div>
-        </div>
-        
-        <div class="role-slot" id="slot-Rebounder">
-          <div class="empty-slot">—</div>
-          <div class="role-name">REBOUNDER</div>
-        </div>
-        
-        <div class="role-slot" id="slot-Stopper">
-          <div class="empty-slot">—</div>
-          <div class="role-name">STOPPER</div>
-        </div>
-        
-        <div class="role-slot" id="slot-Shooter">
-          <div class="empty-slot">—</div>
-          <div class="role-name">SHOOTER</div>
-        </div>
-        
-        <div class="role-slot" id="slot-Young">
-          <div class="empty-slot">—</div>
-          <div class="role-name">SURPRISE</div>
-        </div>
-      </div>
-      
+	  <div class="role-slot" id="slot-Scorer">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">SCORER</div>
+	    <button class="remove-btn" onclick="removePlayer('Scorer')">✕</button>
+	  </div>
+	
+	  <div class="role-slot" id="slot-Assistant">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">ASSISTANT</div>
+	    <button class="remove-btn" onclick="removePlayer('Assistant')">✕</button>
+	  </div>
+	
+	  <div class="role-slot" id="slot-Rebounder">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">REBOUNDER</div>
+	    <button class="remove-btn" onclick="removePlayer('Rebounder')">✕</button>
+	  </div>
+	
+	  <div class="role-slot" id="slot-Stopper">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">STOPPER</div>
+	    <button class="remove-btn" onclick="removePlayer('Stopper')">✕</button>
+	  </div>
+	
+	  <div class="role-slot" id="slot-Shooter">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">SHOOTER</div>
+	    <button class="remove-btn" onclick="removePlayer('Shooter')">✕</button>
+	  </div>
+	
+	  <div class="role-slot" id="slot-Young">
+	    <div class="empty-slot">—</div>
+	    <div class="role-name">SURPRISE</div>
+	    <button class="remove-btn" onclick="removePlayer('Young')">✕</button>
+	  </div>
+	</div>
+	
+	      
       <div id="team-history"></div>
       <div style="display: flex; align-items: center; margin-top: 20px;">
         <button id="save-roster" class="btn-yellow">Save roster</button>
@@ -266,6 +289,22 @@ function hasDuplicatePlayers() {
   const playerIds = players.map(player => player.id);
   
   return new Set(playerIds).size !== players.length;
+}
+function removePlayer(role) {
+  const slot = document.getElementById(`slot-${role}`);
+  const emptySlot = slot.querySelector('.empty-slot');
+
+  // Обновляем текущий состав
+  currentRoster[role] = null;
+  emptySlot.textContent = '—';
+
+  // Пересчитываем бюджет
+  updateBudget();
+
+  // Показываем уведомление об удалении
+  showNotification(`Игрок удалён из позиции ${role}`);
+
+  console.log(`Игрок удалён из роли: ${role}`);
 }
 
 // Функция для сохранения состава в Supabase
@@ -546,25 +585,26 @@ function assignPlayerToRole(player, role, autoSave = true) {
       return false;
     }
   }
-  
+
   // Обновляем текущий состав
   currentRoster[role] = player;
-  
+
   // Обновляем UI
   const slot = document.getElementById(`slot-${role}`);
   const emptySlot = slot.querySelector('.empty-slot');
-  emptySlot.textContent = `${player.name} (${player.team})`;
-  
+  emptySlot.textContent = `${player.first_name} ${player.last_name}`;
+
   // Пересчитываем бюджет
   updateBudget();
-  
+
   // Если autoSave=true, планируем автоматическое сохранение
   if (autoSave) {
     scheduleAutoSave();
   }
-  
+
   return true;
 }
+
 // Функция для обновления отображения бюджета
 function updateBudget() {
   let totalSpent = 0;
@@ -595,6 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
 
 
 
