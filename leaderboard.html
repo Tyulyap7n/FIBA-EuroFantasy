@@ -381,12 +381,10 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
 
   return points;
 }
-
 function calculateTeamPoints(teamId) {
-  // Преобразуем teamId в строку для сравнения (так как в данных он может быть строкой)
   const teamIdStr = String(teamId);
   const teamPlayers = cachedData.teamPlayers.filter(tp => String(tp.team_id) === teamIdStr);
-  
+
   if (teamPlayers.length === 0) {
     console.warn('Нет игроков в команде:', teamId);
     return {
@@ -407,49 +405,59 @@ function calculateTeamPoints(teamId) {
     total: 0
   };
 
+  // Собираем уникальных игроков по турам 2 и 3
+  const uniquePlayersForTours2And3 = new Set();
+
   teamPlayers.forEach(tp => {
-    const points = calculatePlayerPoints(tp.player_id, tp.role_id, tp.tour_id);
     const tourId = Number(tp.tour_id);
-    
-    switch (tourId) {
-      case 1:
-        pointsByTour.tour_1 += points;
-        break;
-      case 2:
-      case 3:
-        pointsByTour.tour_2_3 += points;
-        break;
-      case 4:
-        pointsByTour.tour_4 += points;
-        break;
-      case 5:
-        pointsByTour.tour_5 += points;
-        break;
-      case 6:
-        pointsByTour.tour_6 += points;
-        break;
-      case 7:
-        pointsByTour.tour_7 += points;
-        break;
-      case 8:
-        pointsByTour.tour_8 += points;
-        break;
-      case 99:
-        pointsByTour.tour_finals += points;
-        break;
-      default:
-        console.warn('Неизвестный тур:', tp.tour_id, 'для команды:', teamId);
+    const playerKey = `${tp.player_id}_${tp.role_id}`;
+
+    if (tourId === 2 || tourId === 3) {
+      // Для туров 2 и 3 учитываем игрока только один раз
+      if (!uniquePlayersForTours2And3.has(playerKey)) {
+        uniquePlayersForTours2And3.add(playerKey);
+        const points2 = calculatePlayerPoints(tp.player_id, tp.role_id, 2);
+        const points3 = calculatePlayerPoints(tp.player_id, tp.role_id, 3);
+        pointsByTour.tour_2_3 += points2 + points3;
+      }
+    } else {
+      // Для остальных туров считаем очки как обычно
+      const points = calculatePlayerPoints(tp.player_id, tp.role_id, tourId);
+      switch (tourId) {
+        case 1:
+          pointsByTour.tour_1 += points;
+          break;
+        case 4:
+          pointsByTour.tour_4 += points;
+          break;
+        case 5:
+          pointsByTour.tour_5 += points;
+          break;
+        case 6:
+          pointsByTour.tour_6 += points;
+          break;
+        case 7:
+          pointsByTour.tour_7 += points;
+          break;
+        case 8:
+          pointsByTour.tour_8 += points;
+          break;
+        case 99:
+          pointsByTour.tour_finals += points;
+          break;
+        default:
+          console.warn('Неизвестный тур:', tp.tour_id, 'для команды:', teamId);
+      }
     }
   });
 
-  // Округляем все значения
+  // Округляем и считаем общую сумму
   Object.keys(pointsByTour).forEach(key => {
     if (key !== 'total') {
       pointsByTour[key] = Math.round(pointsByTour[key]);
     }
   });
 
-  // Считаем общую сумму
   pointsByTour.total = Math.round(
     pointsByTour.tour_1 +
     pointsByTour.tour_2_3 +
@@ -705,3 +713,4 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
