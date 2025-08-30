@@ -343,43 +343,20 @@ function calculatePlayerPoints(playerId, roleId, tourId) {
     return 0;
   }
 
-  let points = 0;
-  
-  // Преобразуем tourId в число для сравнения
   const numericTourId = Number(tourId);
-  
-  if (numericTourId === 2 || numericTourId === 3) {
-    // Для туров 2-3 суммируем очки за оба тура
-    [2, 3].forEach(tour => {
-      const stats = cachedData.playerStats.find(s => 
-        s.player_id === playerId && Number(s.tour) === tour
-      ) || {};
-      
-      const context = { ...stats, count: stats.count || 1 };
-      try {
-        const fn = new Function(...Object.keys(context), `return (${role.formula});`);
-        const tourPoints = fn(...Object.values(context));
-        points += isNaN(tourPoints) ? 0 : tourPoints;
-      } catch (e) {
-        console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
-      }
-    });
-  } else {
-    const stats = cachedData.playerStats.find(s => 
-      s.player_id === playerId && Number(s.tour) === numericTourId
-    ) || {};
-    
-    const context = { ...stats, count: stats.count || 1 };
-    try {
-      const fn = new Function(...Object.keys(context), `return (${role.formula});`);
-      const tourPoints = fn(...Object.values(context));
-      points += isNaN(tourPoints) ? 0 : tourPoints;
-    } catch (e) {
-      console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
-    }
-  }
+  const stats = cachedData.playerStats.find(s =>
+    s.player_id === playerId && Number(s.tour) === numericTourId
+  ) || {};
 
-  return points;
+  const context = { ...stats, count: stats.count || 1 };
+  try {
+    const fn = new Function(...Object.keys(context), `return (${role.formula});`);
+    const tourPoints = fn(...Object.values(context));
+    return isNaN(tourPoints) ? 0 : tourPoints;
+  } catch (e) {
+    console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
+    return 0;
+  }
 }
 function calculateTeamPoints(teamId) {
   const teamIdStr = String(teamId);
@@ -740,6 +717,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
