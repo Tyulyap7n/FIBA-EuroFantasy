@@ -186,7 +186,7 @@ async function loadPlayersFromSupabase() {
         + (sumReb * 1.3)
         + (sumStl * 3)
         + (sumBlk * 3)
-        + (sumTo * -3)
+        + (sumTo * -2)
       ) / count;
 
       return {
@@ -807,6 +807,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
+
 
 
 
