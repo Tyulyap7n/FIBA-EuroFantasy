@@ -412,50 +412,70 @@ function calculateTeamPoints(teamId) {
     total: 0
   };
 
-  // Собираем уникальные комбинации игрок + роль + тур
-  const uniquePlayerTourRoles = new Map();
+  // Собираем уникальных игроков по ролям
+  const uniquePlayers = {};
 
   teamPlayers.forEach(tp => {
-    const key = `${tp.player_id}_${tp.role_id}_${tp.tour_id}`;
-    if (!uniquePlayerTourRoles.has(key)) {
-      uniquePlayerTourRoles.set(key, tp);
+    const playerKey = `${tp.player_id}_${tp.role_id}`;
+    if (!uniquePlayers[playerKey]) {
+      uniquePlayers[playerKey] = {
+        player_id: tp.player_id,
+        role_id: tp.role_id,
+        tours: new Set()
+      };
     }
+    uniquePlayers[playerKey].tours.add(Number(tp.tour_id));
   });
 
-  // Рассчитываем очки для каждого уникального игрока, роли и тура
-  uniquePlayerTourRoles.forEach(tp => {
-    const points = calculatePlayerPoints(tp.player_id, tp.role_id, tp.tour_id);
-    const tourId = Number(tp.tour_id);
+  // Рассчитываем очки для каждого уникального игрока
+  Object.values(uniquePlayers).forEach(player => {
+    const { player_id, role_id, tours } = player;
 
-    if (tourId === 2 || tourId === 3) {
-      pointsByTour.tour_2_3 += points;
-    } else {
-      switch (tourId) {
-        case 1:
-          pointsByTour.tour_1 += points;
-          break;
-        case 4:
-          pointsByTour.tour_4 += points;
-          break;
-        case 5:
-          pointsByTour.tour_5 += points;
-          break;
-        case 6:
-          pointsByTour.tour_6 += points;
-          break;
-        case 7:
-          pointsByTour.tour_7 += points;
-          break;
-        case 8:
-          pointsByTour.tour_8 += points;
-          break;
-        case 99:
-          pointsByTour.tour_finals += points;
-          break;
-        default:
-          console.warn('Неизвестный тур:', tourId, 'для команды:', teamId);
-      }
+    // Проверяем, участвовал ли игрок в турах 2 и/или 3
+    let tour2Points = 0;
+    let tour3Points = 0;
+
+    if (tours.has(2)) {
+      tour2Points = calculatePlayerPoints(player_id, role_id, 2);
     }
+    if (tours.has(3)) {
+      tour3Points = calculatePlayerPoints(player_id, role_id, 3);
+    }
+
+    // Суммируем очки за тура 2 и 3 в одно поле
+    pointsByTour.tour_2_3 += tour2Points + tour3Points;
+
+    // Рассчитываем очки для остальных туров
+    tours.forEach(tourId => {
+      if (tourId !== 2 && tourId !== 3) {
+        const points = calculatePlayerPoints(player_id, role_id, tourId);
+        switch (tourId) {
+          case 1:
+            pointsByTour.tour_1 += points;
+            break;
+          case 4:
+            pointsByTour.tour_4 += points;
+            break;
+          case 5:
+            pointsByTour.tour_5 += points;
+            break;
+          case 6:
+            pointsByTour.tour_6 += points;
+            break;
+          case 7:
+            pointsByTour.tour_7 += points;
+            break;
+          case 8:
+            pointsByTour.tour_8 += points;
+            break;
+          case 99:
+            pointsByTour.tour_finals += points;
+            break;
+          default:
+            console.warn('Неизвестный тур:', tourId, 'для игрока:', player_id);
+        }
+      }
+    });
   });
 
   // Округляем значения
@@ -721,6 +741,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
