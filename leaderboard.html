@@ -412,26 +412,26 @@ function calculateTeamPoints(teamId) {
     total: 0
   };
 
-  // Собираем уникальных игроков по ролям
-  const uniquePlayers = {};
+  // Собираем уникальные комбинации игрок + роль
+  const uniquePlayerRoles = {};
 
   teamPlayers.forEach(tp => {
-    const playerKey = `${tp.player_id}_${tp.role_id}`;
-    if (!uniquePlayers[playerKey]) {
-      uniquePlayers[playerKey] = {
+    const key = `${tp.player_id}_${tp.role_id}`;
+    if (!uniquePlayerRoles[key]) {
+      uniquePlayerRoles[key] = {
         player_id: tp.player_id,
         role_id: tp.role_id,
         tours: new Set()
       };
     }
-    uniquePlayers[playerKey].tours.add(Number(tp.tour_id));
+    uniquePlayerRoles[key].tours.add(Number(tp.tour_id));
   });
 
-  // Рассчитываем очки для каждого уникального игрока
-  Object.values(uniquePlayers).forEach(player => {
-    const { player_id, role_id, tours } = player;
+  // Рассчитываем очки для каждого уникального игрока и роли
+  Object.values(uniquePlayerRoles).forEach(playerRole => {
+    const { player_id, role_id, tours } = playerRole;
 
-    // Проверяем, участвовал ли игрок в турах 2 и/или 3
+    // Очки за тур 2 и тур 3 суммируем вместе
     let tour2Points = 0;
     let tour3Points = 0;
 
@@ -442,10 +442,9 @@ function calculateTeamPoints(teamId) {
       tour3Points = calculatePlayerPoints(player_id, role_id, 3);
     }
 
-    // Суммируем очки за тура 2 и 3 в одно поле
     pointsByTour.tour_2_3 += tour2Points + tour3Points;
 
-    // Рассчитываем очки для остальных туров
+    // Очки за остальные туры
     tours.forEach(tourId => {
       if (tourId !== 2 && tourId !== 3) {
         const points = calculatePlayerPoints(player_id, role_id, tourId);
@@ -741,6 +740,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
