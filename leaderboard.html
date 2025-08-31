@@ -641,23 +641,21 @@ function renderPagination() {
 async function showRoster(teamId, currentTour = 1) {
   try {
     console.log('Показ состава команды:', teamId, 'тур:', currentTour);
-    
-    // Преобразуем teamId в строку для сравнения
+
     const teamIdStr = String(teamId);
-    
+
+    // Получаем всех игроков команды для указанного тура
     const teamPlayers = cachedData.teamPlayers.filter(
       tp => String(tp.team_id) === teamIdStr && Number(tp.tour_id) === currentTour
     );
 
     console.log('Найдено игроков в составе:', teamPlayers.length, 'для команды', teamId, 'тура', currentTour);
-    console.log('Данные teamPlayers:', teamPlayers);
 
     if (teamPlayers.length === 0) {
-      // Проверим, есть ли вообще данные для этой команды
       const allTeamPlayers = cachedData.teamPlayers.filter(tp => String(tp.team_id) === teamIdStr);
       console.log('Все игроки команды:', allTeamPlayers);
       console.log('Доступные туры для команды:', [...new Set(allTeamPlayers.map(tp => tp.tour_id))]);
-      
+
       alert(`Нет данных о составе команды для тура ${currentTour}. Доступные туры: ${[...new Set(allTeamPlayers.map(tp => tp.tour_id))].join(', ')}`);
       return;
     }
@@ -669,19 +667,28 @@ async function showRoster(teamId, currentTour = 1) {
     for (const tp of teamPlayers) {
       const player = cachedData.players.find(p => p.id === tp.player_id);
       const role = cachedData.roles.find(r => r.id === tp.role_id);
-      
+
       if (!player) {
         console.warn('Игрок не найден:', tp.player_id);
         continue;
       }
 
-      const points = calculatePlayerPoints(tp.player_id, tp.role_id, currentTour);
+      // Рассчитываем очки игрока за тура 2 и 3, если текущий тур 2 или 3
+      let points;
+      if (currentTour === 2 || currentTour === 3) {
+        const tour2Points = calculatePlayerPoints(tp.player_id, tp.role_id, 2);
+        const tour3Points = calculatePlayerPoints(tp.player_id, tp.role_id, 3);
+        points = tour2Points + tour3Points;
+      } else {
+        points = calculatePlayerPoints(tp.player_id, tp.role_id, currentTour);
+      }
+
       const formattedPoints = (points % 1 === 0) ? Math.round(points) : points.toFixed(1);
 
       const card = document.createElement('div');
       card.className = 'roster-card';
       card.innerHTML = `
-        <img src="${player.photo_url || 'image/ball.svg'}" alt="${player.first_name} ${player.last_name}" 
+        <img src="${player.photo_url || 'image/ball.svg'}" alt="${player.first_name} ${player.last_name}"
              onerror="this.src='image/ball.svg'">
         <div class="role">${role?.name || 'Без роли'}</div>
         <div class="name">${player.first_name} ${player.last_name}</div>
@@ -692,10 +699,8 @@ async function showRoster(teamId, currentTour = 1) {
     }
 
     panel.classList.remove('hidden');
-    
-    // Прокручиваем к панели состава
     panel.scrollIntoView({ behavior: 'smooth' });
-    
+
   } catch (e) {
     console.error('Ошибка showRoster:', e);
     alert('Ошибка при загрузке состава команды');
@@ -717,6 +722,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
