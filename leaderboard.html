@@ -477,7 +477,8 @@ function calculateTeamPoints(teamId) {
 }
 
 async function loadLeaderboard() {
-    cachedData = { teams: [], teamPlayers: [], playerStats: [], roles: [], players: [] }; // Очистка кэша
+  cachedData = { teams: [], teamPlayers: [], playerStats: [], roles: [], players: [] }; // Очистка кэша
+  const success = await loadAllData();
   const loadingElement = document.getElementById('loading');
   loadingElement.classList.remove('hidden');
   
@@ -723,6 +724,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
