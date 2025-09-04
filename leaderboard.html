@@ -285,44 +285,41 @@ let cachedData = {
 async function loadAllData() {
   try {
     console.log('Загружаем данные из Supabase...');
-
+    // Загрузка игроков
     const { data: players, error: playersError } = await supabase
       .from('players')
       .select('*')
       .order('id', { ascending: true });
-
     if (playersError) {
       console.error('Ошибка загрузки игроков:', playersError);
       return false;
     }
-
-    console.log('Всего игроков:', players.length);
-    console.log('Игроки с id > 1052:', players.filter(p => p.id > 1052));
-
-    // Аналогично для других таблиц
+    // Загрузка игроков команд
     const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('team_players')
       .select('*');
-
     if (teamPlayersError) {
       console.error('Ошибка загрузки игроков команд:', teamPlayersError);
       return false;
     }
-
-    console.log('Игроки команд с player_id > 1052:', teamPlayers.filter(tp => tp.player_id > 1052));
-
-    // Обновите кэш
+    // Загрузка команд
+    const { data: teams, error: teamsError } = await supabase
+      .from('user_teams') // или другая таблица с командами
+      .select('*');
+    if (teamsError) {
+      console.error('Ошибка загрузки команд:', teamsError);
+      return false;
+    }
+    // Обновляем кэш
     cachedData.players = players || [];
     cachedData.teamPlayers = teamPlayers || [];
-
+    cachedData.teams = teams || [];
     return true;
   } catch (error) {
     console.error('Ошибка в loadAllData:', error);
     return false;
   }
 }
-
-
 
 function calculatePlayerPoints(playerId, roleId, tourId) {
   const role = cachedData.roles.find(r => r.id === roleId);
@@ -712,6 +709,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
