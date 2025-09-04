@@ -289,39 +289,33 @@ async function loadAllData() {
       .from('players')
       .select('*')
       .order('id', { ascending: true });
-    if (playersError) {
-      console.error('Ошибка загрузки игроков:', playersError);
-      return false;
-    }
+    if (playersError) throw playersError;
     // Загрузка игроков команд
     const { data: teamPlayers, error: teamPlayersError } = await supabase
       .from('team_players')
       .select('*');
-    if (teamPlayersError) {
-      console.error('Ошибка загрузки игроков команд:', teamPlayersError);
-      return false;
-    }
+    if (teamPlayersError) throw teamPlayersError;
     // Загрузка команд
     const { data: teams, error: teamsError } = await supabase
       .from('user_teams')
       .select('*');
-    if (teamsError) {
-      console.error('Ошибка загрузки команд:', teamsError);
-      return false;
-    }
+    if (teamsError) throw teamsError;
     // Загрузка ролей
     const { data: roles, error: rolesError } = await supabase
       .from('roles')
       .select('*');
-    if (rolesError) {
-      console.error('Ошибка загрузки ролей:', rolesError);
-      return false;
-    }
+    if (rolesError) throw rolesError;
+    // Загрузка статистики игроков
+    const { data: playerStats, error: playerStatsError } = await supabase
+      .from('player_stats')
+      .select('*');
+    if (playerStatsError) throw playerStatsError;
     // Обновляем кэш
     cachedData.players = players || [];
     cachedData.teamPlayers = teamPlayers || [];
     cachedData.teams = teams || [];
     cachedData.roles = roles || [];
+    cachedData.playerStats = playerStats || [];
     return true;
   } catch (error) {
     console.error('Ошибка в loadAllData:', error);
@@ -329,28 +323,42 @@ async function loadAllData() {
   }
 }
 
+
 function calculatePlayerPoints(playerId, roleId, tourId) {
   const role = cachedData.roles.find(r => r.id === roleId);
   if (!role || !role.formula) {
     console.warn('Роль или формула не найдены для playerId:', playerId, 'roleId:', roleId);
     return 0;
   }
-
-  const numericTourId = Number(tourId);
-  const stats = cachedData.playerStats.find(s =>
-    s.player_id === playerId && Number(s.tour) === numericTourId
-  ) || {};
-
-  const context = { ...stats, count: stats.count || 1 };
+  // Ищем статистику игрока за указанный тур
+  const stats = cachedData.playerStats.find(
+    s => s.player_id === playerId && s.tour === tourId
+  );
+  if (!stats) {
+    console.warn('Статистика не найдена для playerId:', playerId, 'tourId:', tourId);
+    return 0;
+  }
+  // Формируем контекст для формулы
+  const context = {
+    points: stats.points || 0,
+    threes: stats.threes || 0,
+    assists: stats.assists || 0,
+    rebounds: stats.rebounds || 0,
+    blocks: stats.blocks || 0,
+    steals: stats.steals || 0,
+    turnover: stats.turnover || 0,
+  };
   try {
+    // Безопасно выполняем формулу
     const fn = new Function(...Object.keys(context), `return (${role.formula});`);
-    const tourPoints = fn(...Object.values(context));
-    return isNaN(tourPoints) ? 0 : tourPoints;
+    const points = fn(...Object.values(context));
+    return isNaN(points) ? 0 : points;
   } catch (e) {
-    console.error('Ошибка формулы:', role.formula, 'для игрока:', playerId, e);
+    console.error('Ошибка в формуле:', role.formula, 'для игрока:', playerId, e);
     return 0;
   }
 }
+
 function calculateTeamPoints(teamId) {
   const teamIdStr = String(teamId);
   const teamPlayers = cachedData.teamPlayers.filter(tp => String(tp.team_id) === teamIdStr);
@@ -717,6 +725,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
