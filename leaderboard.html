@@ -285,50 +285,43 @@ let cachedData = {
 async function loadAllData() {
   try {
     console.log('Загружаем данные из Supabase...');
-    const [
-      { data: teams, error: teamsError },
-      { data: teamPlayers, error: teamPlayersError },
-      { data: playerStats, error: statsError },
-      { data: roles, error: rolesError },
-      { data: players, error: playersError }
-    ] = await Promise.all([
-      supabase.from('user_teams').select('id, team_name'),
-      supabase.from('team_players').select('team_id, player_id, role_id, tour_id'),
-      supabase.from('player_stats').select('*'),
-      supabase.from('roles').select('id, name, formula'),
-      supabase.from('players').select('id, first_name, last_name, photo_url, country')
-    ]);
 
-    // Выводим ошибки, если они есть
-    if (teamsError) console.error('Ошибка загрузки команд:', teamsError);
-    if (teamPlayersError) console.error('Ошибка загрузки игроков команд:', teamPlayersError);
-    if (statsError) console.error('Ошибка загрузки статистики:', statsError);
-    if (rolesError) console.error('Ошибка загрузки ролей:', rolesError);
-    if (playersError) console.error('Ошибка загрузки игроков:', playersError);
+    const { data: players, error: playersError } = await supabase
+      .from('players')
+      .select('*')
+      .order('id', { ascending: true });
 
-    // Выводим количество загруженных данных
-    console.log('Команды:', teams?.length || 0);
-    console.log('Игроки команд:', teamPlayers?.length || 0);
-    console.log('Статистика:', playerStats?.length || 0);
-    console.log('Роли:', roles?.length || 0);
-    console.log('Игроки:', players?.length || 0);
+    if (playersError) {
+      console.error('Ошибка загрузки игроков:', playersError);
+      return false;
+    }
 
-    // Сохраняем данные в кэш
-    cachedData = {
-      teams: teams || [],
-      teamPlayers: teamPlayers || [],
-      playerStats: playerStats || [],
-      roles: roles || [],
-      players: players || []
-    };
+    console.log('Всего игроков:', players.length);
+    console.log('Игроки с id > 1052:', players.filter(p => p.id > 1052));
 
-    console.log('Данные сохранены в кэш:', cachedData);
+    // Аналогично для других таблиц
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
+      .from('team_players')
+      .select('*');
+
+    if (teamPlayersError) {
+      console.error('Ошибка загрузки игроков команд:', teamPlayersError);
+      return false;
+    }
+
+    console.log('Игроки команд с player_id > 1052:', teamPlayers.filter(tp => tp.player_id > 1052));
+
+    // Обновите кэш
+    cachedData.players = players || [];
+    cachedData.teamPlayers = teamPlayers || [];
+
     return true;
   } catch (error) {
     console.error('Ошибка в loadAllData:', error);
     return false;
   }
 }
+
 
 
 function calculatePlayerPoints(playerId, roleId, tourId) {
@@ -719,6 +712,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
