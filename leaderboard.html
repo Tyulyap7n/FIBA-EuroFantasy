@@ -281,7 +281,6 @@ let cachedData = {
   roles: [],
   players: []
 };
-
 async function loadAllData() {
   try {
     console.log('Загружаем данные из Supabase...');
@@ -304,16 +303,25 @@ async function loadAllData() {
     }
     // Загрузка команд
     const { data: teams, error: teamsError } = await supabase
-      .from('user_teams') // или другая таблица с командами
+      .from('user_teams')
       .select('*');
     if (teamsError) {
       console.error('Ошибка загрузки команд:', teamsError);
+      return false;
+    }
+    // Загрузка ролей
+    const { data: roles, error: rolesError } = await supabase
+      .from('roles')
+      .select('*');
+    if (rolesError) {
+      console.error('Ошибка загрузки ролей:', rolesError);
       return false;
     }
     // Обновляем кэш
     cachedData.players = players || [];
     cachedData.teamPlayers = teamPlayers || [];
     cachedData.teams = teams || [];
+    cachedData.roles = roles || [];
     return true;
   } catch (error) {
     console.error('Ошибка в loadAllData:', error);
@@ -709,6 +717,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
