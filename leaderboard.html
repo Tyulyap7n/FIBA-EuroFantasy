@@ -284,38 +284,48 @@ let cachedData = {
 async function loadAllData() {
   try {
     console.log('Загружаем данные из Supabase...');
-    // Загрузка игроков
-    const { data: players, error: playersError } = await supabase
-      .from('players')
-      .select('*')
-      .order('id', { ascending: true });
-    if (playersError) throw playersError;
-    // Загрузка игроков команд
-    const { data: teamPlayers, error: teamPlayersError } = await supabase
-      .from('team_players')
-      .select('*');
-    if (teamPlayersError) throw teamPlayersError;
-    // Загрузка команд
-    const { data: teams, error: teamsError } = await supabase
-      .from('user_teams')
-      .select('*');
-    if (teamsError) throw teamsError;
-    // Загрузка ролей
-    const { data: roles, error: rolesError } = await supabase
-      .from('roles')
-      .select('*');
-    if (rolesError) throw rolesError;
-    // Загрузка статистики игроков
-    const { data: playerStats, error: playerStatsError } = await supabase
-      .from('player_stats')
-      .select('*');
-    if (playerStatsError) throw playerStatsError;
+
+    // Функция для загрузки всех данных с пагинацией
+    const fetchAll = async (tableName) => {
+      let allData = [];
+      let offset = 0;
+      const limit = 1000; // Максимум строк за один запрос
+
+      while (true) {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .range(offset, offset + limit - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allData = [...allData, ...data];
+        offset += limit;
+      }
+
+      return allData;
+    };
+
+    // Загрузка всех данных с пагинацией
+    const players = await fetchAll('players');
+    const teamPlayers = await fetchAll('team_players');
+    const teams = await fetchAll('user_teams');
+    const roles = await fetchAll('roles');
+    const playerStats = await fetchAll('player_stats');
+
+    // Логирование загруженных данных
+    console.log('Всего игроков:', players.length);
+    console.log('Игроки с id > 1052:', players.filter(p => p.id > 1052));
+    console.log('Статистика для тура 1:', playerStats.filter(s => s.tour === 1));
+
     // Обновляем кэш
     cachedData.players = players || [];
     cachedData.teamPlayers = teamPlayers || [];
     cachedData.teams = teams || [];
     cachedData.roles = roles || [];
     cachedData.playerStats = playerStats || [];
+
     return true;
   } catch (error) {
     console.error('Ошибка в loadAllData:', error);
@@ -725,6 +735,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
