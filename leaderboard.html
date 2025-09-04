@@ -284,9 +284,7 @@ let cachedData = {
 
 async function loadAllData() {
   try {
-    console.log('Начинаем загрузку данных...');
-    
-    // Загружаем все данные одним запросом
+    console.log('Загружаем данные из Supabase...');
     const [
       { data: teams, error: teamsError },
       { data: teamPlayers, error: teamPlayersError },
@@ -295,19 +293,27 @@ async function loadAllData() {
       { data: players, error: playersError }
     ] = await Promise.all([
       supabase.from('user_teams').select('id, team_name'),
-      supabase.from('team_players').select('team_id, player_id, tour_id, role_id'),
+      supabase.from('team_players').select('team_id, player_id, role_id, tour_id'),
       supabase.from('player_stats').select('*'),
       supabase.from('roles').select('id, name, formula'),
       supabase.from('players').select('id, first_name, last_name, photo_url, country')
     ]);
 
-    // Проверяем ошибки
-    const errors = [teamsError, teamPlayersError, statsError, rolesError, playersError].filter(error => error);
-    if (errors.length > 0) {
-      console.error('Ошибки при загрузке данных:', errors);
-      throw new Error(`Ошибки загрузки: ${errors.map(e => e.message).join(', ')}`);
-    }
+    // Выводим ошибки, если они есть
+    if (teamsError) console.error('Ошибка загрузки команд:', teamsError);
+    if (teamPlayersError) console.error('Ошибка загрузки игроков команд:', teamPlayersError);
+    if (statsError) console.error('Ошибка загрузки статистики:', statsError);
+    if (rolesError) console.error('Ошибка загрузки ролей:', rolesError);
+    if (playersError) console.error('Ошибка загрузки игроков:', playersError);
 
+    // Выводим количество загруженных данных
+    console.log('Команды:', teams?.length || 0);
+    console.log('Игроки команд:', teamPlayers?.length || 0);
+    console.log('Статистика:', playerStats?.length || 0);
+    console.log('Роли:', roles?.length || 0);
+    console.log('Игроки:', players?.length || 0);
+
+    // Сохраняем данные в кэш
     cachedData = {
       teams: teams || [],
       teamPlayers: teamPlayers || [],
@@ -316,25 +322,14 @@ async function loadAllData() {
       players: players || []
     };
 
-    console.log('Данные успешно загружены:', {
-      teams: cachedData.teams.length,
-      teamPlayers: cachedData.teamPlayers.length,
-      playerStats: cachedData.playerStats.length,
-      roles: cachedData.roles.length,
-      players: cachedData.players.length
-    });
-
-    // Отладочная информация о составе команд
-    console.log('Пример данных team_players:', cachedData.teamPlayers.slice(0, 5));
-    console.log('Уникальные team_id:', [...new Set(cachedData.teamPlayers.map(tp => tp.team_id))]);
-    console.log('Уникальные tour_id:', [...new Set(cachedData.teamPlayers.map(tp => tp.tour_id))]);
-
+    console.log('Данные сохранены в кэш:', cachedData);
     return true;
   } catch (error) {
-    console.error('Критическая ошибка загрузки данных:', error);
+    console.error('Ошибка в loadAllData:', error);
     return false;
   }
 }
+
 
 function calculatePlayerPoints(playerId, roleId, tourId) {
   const role = cachedData.roles.find(r => r.id === roleId);
@@ -724,6 +719,7 @@ document.addEventListener("DOMContentLoaded", loadLeaderboard);
 </script>
 </body>
 </html>
+
 
 
 
