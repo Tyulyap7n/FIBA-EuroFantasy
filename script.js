@@ -6,7 +6,7 @@
 */
 
 /* ========== Константы / состояния ========== */
-
+const hiddenPlayerIds = [1, 2, 3]; // Замените на нужные ID
 const BUDGET_CAP = 70;
 const DEFAULT_AVATAR = ""; // путь к заглушке, если нужно
 const playersPerPage = 8;
@@ -371,11 +371,12 @@ function getFilteredAndSortedPlayers() {
   const country = (document.getElementById("filter-country")?.value || "").trim();
   const pos = (document.getElementById("filter-pos")?.value || "").trim();
   const sort = (document.getElementById("filter-sort")?.value || "").trim();
-
   let list = Array.isArray(players) ? [...players] : [];
-
   if (country) list = list.filter(p => (p.country || "").toLowerCase() === country.toLowerCase());
   if (pos) list = list.filter(p => (p.position || p.pos || "").toUpperCase() === pos.toUpperCase());
+
+  // Фильтрация скрытых игроков
+  list = list.filter(p => !hiddenPlayerIds.includes(p.id));
 
   if (sort) {
     switch (sort) {
@@ -386,9 +387,9 @@ function getFilteredAndSortedPlayers() {
       default: break;
     }
   }
-
   return list;
 }
+
 
 function populateCountryFilter() {
   const sel = document.getElementById("filter-country");
@@ -807,6 +808,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
+
 
 
 
