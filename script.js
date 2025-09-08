@@ -28,6 +28,56 @@ let ROLE_OPTIONS = [
   { key: "Shooter", label: "SHOOTER" },
   { key: "Young", label: "SURPRISE", maxPrice: 7 }
 ];
+// Глобальный объект для кэширования всех данных
+const cachedData = {
+  players: [],
+  teamPlayers: [],
+  teams: [],
+  roles: [],
+  playerStats: [],
+};
+
+// Функция для загрузки всех данных с пагинацией
+async function loadAllData() {
+  try {
+    console.log('Загружаем все данные из Supabase с пагинацией...');
+
+    // Вспомогательная функция для загрузки всех данных с пагинацией
+    const fetchAll = async (tableName) => {
+      let allData = [];
+      let offset = 0;
+      const limit = 1000; // Максимум строк за один запрос
+      while (true) {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .range(offset, offset + limit - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = [...allData, ...data];
+        offset += limit;
+      }
+      return allData;
+    };
+
+    // Загрузка всех данных с пагинацией
+    cachedData.players = await fetchAll('players');
+    cachedData.teamPlayers = await fetchAll('team_players');
+    cachedData.teams = await fetchAll('user_teams');
+    cachedData.roles = await fetchAll('roles');
+    cachedData.playerStats = await fetchAll('player_stats');
+
+    // Логирование загруженных данных
+    console.log('Всего игроков:', cachedData.players.length);
+    console.log('Игроки с id > 1052:', cachedData.players.filter(p => p.id > 1052));
+    console.log('Статистика для тура 1:', cachedData.playerStats.filter(s => s.tour === 1));
+
+    return true;
+  } catch (error) {
+    console.error('Ошибка в loadAllData:', error);
+    return false;
+  }
+}
 
 // выбранные игроки по ключу роли: { Scorer: playerId | null, ... }
 const selectedRoles = {
@@ -742,7 +792,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "index.html";
     return;
   }
-
   try {
     // Берём название команды пользователя из таблицы user_teams
     const { data: team, error: teamError } = await supabase
@@ -750,39 +799,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       .select("team_name")
       .eq("user_id", user.id)
       .single();
-
     if (teamError) throw teamError;
-
     // Обновляем элементы на странице
     const welcomeEl = document.getElementById("welcome-message");
     const teamEl = document.getElementById("team-name");
     const headerTitle = document.querySelector("header h1");
-
     if (welcomeEl) {
       const nickname = user.user_metadata?.username || user.email || "Игрок";
       welcomeEl.textContent = `Привет, ${nickname}!`;
     }
-
     if (teamEl && team?.team_name) {
       teamEl.textContent = `Название команды: ${team.team_name}`;
     }
-
     if (headerTitle && team?.team_name) {
       headerTitle.textContent = team.team_name;
     }
   } catch (err) {
     console.error("Ошибка при получении данных пользователя:", err);
   }
-
   if (!ensureSupabase()) return;
 
-  // далее твоя инициализация: loadRolesFromDb, loadCurrentUserAndTeam и т.д.
+  // Загрузка всех данных с пагинацией
+  const dataLoaded = await loadAllData();
+  if (!dataLoaded) {
+    console.error("Не удалось загрузить данные.");
+    return;
+  }
+
+  // Используем кэшированные данные
+  players = cachedData.players;
+  rolesFromDb = cachedData.roles;
+
+  // Далее ваша инициализация
   await loadRolesFromDb();
   await loadCurrentUserAndTeam();
-  await loadPlayersFromSupabase();
   await loadCurrentTour();
   await loadTeamPlayers();
-
   populateCountryFilter();
   initTableFilters();
   initPaginationButtons();
@@ -791,7 +843,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await renderTeamHistory();
   updateBudgetDisplay();
   initParButtons();
-
   const saveBtn = document.getElementById("save-roster");
   if (saveBtn) {
     saveBtn.addEventListener("click", async () => {
@@ -800,7 +851,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       saveBtn.disabled = false;
     });
   }
-
   document.querySelectorAll(".role-slot").forEach(slot => {
     slot.addEventListener("click", async () => {
       slot.classList.add("active");
@@ -808,6 +858,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
+
+
 
 
 
