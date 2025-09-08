@@ -1,25 +1,9 @@
-/* script.js — таблица, круговой селектор ролей, пагинация, назначение в БД (team_players)
-   Полностью переписан: исправлены ошибки с типами, сделано сохранение/замена в team_players,
-   пагинация по 8 игроков, фильтры, вычисление AVG по заданной формуле (без 3PTM),
-   убрана карточка превью (удалена интерактивность показа превью при клике на строку).
-   Предполагается, что supabaseClient.js уже проинициализировал window.supabase.
-*/
-
-/* ========== Константы / состояния ========== */
-const hiddenPlayerIds = [49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,97,98,99,100,101,102,103,104,105,106,107,108,121,122,123,124,125,126,127,128,129,130,131,132,157,158,159,160,161,162,163,164,165,166,167,168,181,182,183,184,185,186,187,188,189,190,191,192,229,230,231,232,233,234,235,236,237,238,239,240,277,278,279,280,281,282,283,284,285,286,287,288,133,134,135,136,137,138,139,140,141,142,143,144,37,38,39,40,41,42,43,44,45,46,47,48,25,26,27,28,29,30,31,32,33,34,35,36,1,2,3,4,5,6,7,8,9,10,11,12,193,194,195,196,197,198,199,200,201,202,203,204,265,266,267,268,269,270,271,272,273,274,275,276,145,146,147,148,149,150,151,152,153,154,155,156,217,218,219,220,221,222,223,224,225,226,227,228]; // Замените на нужные ID
+/* script.js — таблица, круговой селектор ролей, пагинация, назначение в БД (team_players) */
+const hiddenPlayerIds = [49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,97,98,99,100,101,102,103,104,105,106,107,108,121,122,123,124,125,126,127,128,129,130,131,132,157,158,159,160,161,162,163,164,165,166,167,168,181,182,183,184,185,186,187,188,189,190,191,192,229,230,231,232,233,234,235,236,237,238,239,240,277,278,279,280,281,282,283,284,285,286,287,288,133,134,135,136,137,138,139,140,141,142,143,144,37,38,39,40,41,42,43,44,45,46,47,48,25,26,27,28,29,30,31,32,33,34,35,36,1,2,3,4,5,6,7,8,9,10,11,12,193,194,195,196,197,198,199,200,201,202,203,204,265,266,267,268,269,270,271,272,273,274,275,276,145,146,147,148,149,150,151,152,153,154,155,156,217,218,219,220,221,222,223,224,225,226,227,228];
 const BUDGET_CAP = 70;
-const DEFAULT_AVATAR = ""; // путь к заглушке, если нужно
+const DEFAULT_AVATAR = "";
 const playersPerPage = 8;
-const ROLE_KEYS = [
-  "Scorer",
-  "Assistant",
-  "Rebounder",
-  "Stopper",
-  "Shooter",
-  "Young" // сюрприз / surprise
-];
-
-// ROLE_OPTIONS будет заполняться из БД (roles) и содержать { key, label, dbId, maxPrice? }
+const ROLE_KEYS = ["Scorer", "Assistant", "Rebounder", "Stopper", "Shooter", "Young"];
 let ROLE_OPTIONS = [
   { key: "Scorer", label: "SCORER" },
   { key: "Assistant", label: "ASSISTANT" },
@@ -28,7 +12,14 @@ let ROLE_OPTIONS = [
   { key: "Shooter", label: "SHOOTER" },
   { key: "Young", label: "SURPRISE", maxPrice: 7 }
 ];
-// Глобальный объект для кэширования всех данных
+const selectedRoles = {
+  Scorer: null,
+  Assistant: null,
+  Rebounder: null,
+  Stopper: null,
+  Shooter: null,
+  Young: null
+};
 const cachedData = {
   players: [],
   teamPlayers: [],
@@ -36,17 +27,97 @@ const cachedData = {
   roles: [],
   playerStats: [],
 };
+let players = [];
+let rolesFromDb = [];
+let teamPlayers = [];
+let currentUser = null;
+let currentUserTeamId = null;
+let currentPage = 1;
+let currentTourId = null;
 
-// Функция для загрузки всех данных с пагинацией
+function logDebug(...args) { console.debug("[script.js]", ...args); }
+function ensureSupabase() {
+  if (!window.supabase) {
+    console.error("Supabase клиент не найден. Подключите supabaseClient.js перед script.js");
+    return false;
+  }
+  return true;
+}
+
+async function loadRolesFromDb() {
+  if (!ensureSupabase()) return;
+  try {
+    const { data, error } = await supabase.from("roles").select("id,name,formula");
+    if (error) throw error;
+    rolesFromDb = data || [];
+    ROLE_OPTIONS.forEach(opt => {
+      const match = rolesFromDb.find(r => String(r.name).toLowerCase() === String(opt.key).toLowerCase() || String(r.name).toLowerCase() === String(opt.label).toLowerCase());
+      if (match) opt.dbId = match.id;
+    });
+    logDebug("ROLE_OPTIONS mapped:", ROLE_OPTIONS);
+  } catch (err) {
+    console.error("Ошибка загрузки roles:", err);
+  }
+}
+
+async function loadCurrentUserAndTeam() {
+  if (!ensureSupabase()) return;
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    currentUser = session?.user ?? null;
+    const { data: teamData, error: teamError } = await supabase
+      .from("user_teams")
+      .select("id,team_name")
+      .eq("user_id", currentUser.id)
+      .limit(1)
+      .maybeSingle();
+    if (teamError) throw teamError;
+    if (teamData) {
+      currentUserTeamId = teamData.id;
+    } else {
+      const username = currentUser.user_metadata?.username || `user_${currentUser.id.slice(0,6)}`;
+      const { data: newTeam, error: insertErr } = await supabase
+        .from("user_teams")
+        .insert([{ user_id: currentUser.id, team_name: username }])
+        .select("id")
+        .single();
+      if (insertErr) throw insertErr;
+      currentUserTeamId = newTeam.id;
+    }
+    const userNameEl = document.getElementById("header-username");
+    if (userNameEl) {
+      const username = currentUser.user_metadata?.username || currentUser.email || "Игрок";
+      userNameEl.textContent = username;
+    }
+    logDebug("currentUserTeamId:", currentUserTeamId);
+  } catch (err) {
+    console.error("Ошибка получения текущего пользователя / команды:", err);
+  }
+}
+
+async function loadCurrentTour() {
+  const { data: tours, error } = await supabase
+    .from("tours")
+    .select("*")
+    .order("start_time", { ascending: true });
+  if (error) {
+    console.error("Ошибка загрузки туров:", error);
+    return;
+  }
+  const now = new Date();
+  const currentTour = tours.find(t => new Date(t.start_time) <= now && now <= new Date(t.end_time));
+  currentTourId = currentTour ? currentTour.id : null;
+  console.log("currentTourId:", currentTourId);
+}
+
 async function loadAllData() {
   try {
     console.log('Загружаем все данные из Supabase с пагинацией...');
-
-    // Вспомогательная функция для загрузки всех данных с пагинацией
     const fetchAll = async (tableName) => {
       let allData = [];
       let offset = 0;
-      const limit = 1000; // Максимум строк за один запрос
+      const limit = 1000;
       while (true) {
         const { data, error } = await supabase
           .from(tableName)
@@ -59,158 +130,14 @@ async function loadAllData() {
       }
       return allData;
     };
-
-    // Загрузка всех данных с пагинацией
-    cachedData.players = await fetchAll('players');
+    const playersData = await fetchAll('players');
+    const playerStatsData = await fetchAll('player_stats');
     cachedData.teamPlayers = await fetchAll('team_players');
     cachedData.teams = await fetchAll('user_teams');
     cachedData.roles = await fetchAll('roles');
-    cachedData.playerStats = await fetchAll('player_stats');
 
-    // Логирование загруженных данных
-    console.log('Всего игроков:', cachedData.players.length);
-    console.log('Игроки с id > 1052:', cachedData.players.filter(p => p.id > 1052));
-    console.log('Статистика для тура 1:', cachedData.playerStats.filter(s => s.tour === 1));
-
-    return true;
-  } catch (error) {
-    console.error('Ошибка в loadAllData:', error);
-    return false;
-  }
-}
-
-// выбранные игроки по ключу роли: { Scorer: playerId | null, ... }
-const selectedRoles = {
-  Scorer: null,
-  Assistant: null,
-  Rebounder: null,
-  Stopper: null,
-  Shooter: null,
-  Young: null
-};
-
-// данные
-let players = [];         // загруженные игроки
-let rolesFromDb = [];     // записи roles из БД
-let teamPlayers = [];     // записи team_players для текущей команды
-let currentUser = null;   // supabase user object
-let currentUserTeamId = null; // id из user_teams
-let currentPage = 1;
-let currentTourId = null; // глобальная переменная
-/* ========== Помощники ========== */
-function logDebug(...args) { console.debug("[script.js]", ...args); }
-
-function ensureSupabase() {
-  if (!window.supabase) {
-    console.error("Supabase клиент не найден. Подключите supabaseClient.js перед script.js");
-    return false;
-  }
-  return true;
-}
-
-/* ========== Загрузка ролей + маппинг ROLE_OPTIONS ========== */
-async function loadRolesFromDb() {
-  if (!ensureSupabase()) return;
-  try {
-    const { data, error } = await supabase
-      .from("roles")
-      .select("id,name,formula");
-
-    if (error) throw error;
-    rolesFromDb = data || [];
-
-    // сопоставляем ROLE_OPTIONS по name -> key (регистронезависимо)
-    ROLE_OPTIONS.forEach(opt => {
-      const match = rolesFromDb.find(r => String(r.name).toLowerCase() === String(opt.key).toLowerCase() || String(r.name).toLowerCase() === String(opt.label).toLowerCase());
-      if (match) opt.dbId = match.id;
-    });
-
-    logDebug("ROLE_OPTIONS mapped:", ROLE_OPTIONS);
-  } catch (err) {
-    console.error("Ошибка загрузки roles:", err);
-  }
-}
-
-/* ========== АВТОРИЗАЦИЯ и команда пользователя ========== */
-async function loadCurrentUserAndTeam() {
-  if (!ensureSupabase()) return;
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    currentUser = session?.user ?? null;
-    // ищем запись в user_teams по user_id (создаём, если нет — но в auth.js уже пытались создать)
-    const { data: teamData, error: teamError } = await supabase
-      .from("user_teams")
-      .select("id,team_name")
-      .eq("user_id", currentUser.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (teamError) throw teamError;
-    if (teamData) {
-      currentUserTeamId = teamData.id;
-    } else {
-      // создать запись с username из метаданных (fallback)
-      const username = currentUser.user_metadata?.username || `user_${currentUser.id.slice(0,6)}`;
-      const { data: newTeam, error: insertErr } = await supabase
-        .from("user_teams")
-        .insert([{ user_id: currentUser.id, team_name: username }])
-        .select("id")
-        .single();
-      if (insertErr) throw insertErr;
-      currentUserTeamId = newTeam.id;
-    }
-
-    // показать имя в хедере (если есть элемент)
-    const userNameEl = document.getElementById("header-username");
-    if (userNameEl) {
-      const username = currentUser.user_metadata?.username || currentUser.email || "Игрок";
-      userNameEl.textContent = username;
-    }
-
-    logDebug("currentUserTeamId:", currentUserTeamId);
-  } catch (err) {
-    console.error("Ошибка получения текущего пользователя / команды:", err);
-  }
-}
-async function loadCurrentTour() {
-  const { data: tours, error } = await supabase
-    .from("tours")
-    .select("*")
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    console.error("Ошибка загрузки туров:", error);
-    return;
-  }
-
-  // выбираем тур по текущему времени
-  const now = new Date();
-  const currentTour = tours.find(t => new Date(t.start_time) <= now && now <= new Date(t.end_time));
-  currentTourId = currentTour ? currentTour.id : null;
-
-  console.log("currentTourId:", currentTourId);
-}
-
-/* ========== Загрузка игроков и player_stats, расчёт AVG ========== */
-async function loadPlayersFromSupabase() {
-  if (!ensureSupabase()) return;
-  try {
-    // 1) игроки
-    const { data: playersData, error: pErr } = await supabase
-      .from("players")
-      .select("id,first_name,last_name,position,country,price,photo_url,stats");
-    if (pErr) throw pErr;
-
-    // 2) статистика player_stats (включая tour)
-    const { data: statsData, error: sErr } = await supabase
-      .from("player_stats")
-      .select("player_id,tour,points,threes,assists,rebounds,blocks,steals,turnover");
-    if (sErr) throw sErr;
-
-    // Сгруппируем stats по player_id, при этом объединим tour 2 и 3 → 2
     const statsByPlayer = {};
-    (statsData || []).forEach(s => {
+    (playerStatsData || []).forEach(s => {
       const pid = s.player_id;
       const tour = (s.tour === 2 || s.tour === 3) ? 2 : s.tour;
       const record = { ...s, tour };
@@ -218,18 +145,15 @@ async function loadPlayersFromSupabase() {
       statsByPlayer[pid].push(record);
     });
 
-    // Формула AVG (без 3PTM): (PTS + AST*1.5 + REB*1.3 + ST*3 + BLK*3 + TO*(-3)) / count
-    players = (playersData || []).map(p => {
+    cachedData.players = (playersData || []).map(p => {
       const list = statsByPlayer[p.id] || [];
-      const count = list.length || 1; // если нет записей — делим на 1 чтобы не было NaN
-
+      const count = list.length || 1;
       const sumPts = list.reduce((s, r) => s + (r.points || 0), 0);
       const sumAst = list.reduce((s, r) => s + (r.assists || 0), 0);
       const sumReb = list.reduce((s, r) => s + (r.rebounds || 0), 0);
       const sumBlk = list.reduce((s, r) => s + (r.blocks || 0), 0);
       const sumStl = list.reduce((s, r) => s + (r.steals || 0), 0);
       const sumTo  = list.reduce((s, r) => s + (r.turnover || 0), 0);
-
       const avgFormula = (
         (sumPts)
         + (sumAst * 1.5)
@@ -238,7 +162,6 @@ async function loadPlayersFromSupabase() {
         + (sumBlk * 3)
         + (sumTo * -2)
       ) / count;
-
       return {
         id: p.id,
         first_name: p.first_name,
@@ -249,7 +172,6 @@ async function loadPlayersFromSupabase() {
         price: Number(p.price ?? 0),
         photo: p.photo_url || "",
         stats: p.stats || {},
-        // отдельные усреднённые колонки (чтобы таблица показывала компоненты)
         avg: Number(avgFormula.toFixed(1)),
         pts: Number((sumPts / count).toFixed(1)),
         ast: Number((sumAst / count).toFixed(1)),
@@ -260,59 +182,47 @@ async function loadPlayersFromSupabase() {
       };
     });
 
-    logDebug("players loaded:", players.length);
-  } catch (err) {
-    console.error("Ошибка при загрузке игроков:", err);
+    console.log('Всего игроков:', cachedData.players.length);
+    return true;
+  } catch (error) {
+    console.error('Ошибка в loadAllData:', error);
+    return false;
   }
 }
 
-/* ========== Загрузка team_players (состав текущей команды) ========== */
 async function loadTeamPlayers() {
   if (!ensureSupabase()) return;
   if (!currentUserTeamId) return;
-  if (!currentTourId) return; // убедимся, что тур задан
-
+  if (!currentTourId) return;
   try {
     const { data, error } = await supabase
       .from("team_players")
       .select("id,team_id,player_id,role_id,tour_id")
       .eq("team_id", currentUserTeamId)
-      .eq("tour_id", currentTourId); // фильтр по текущему туру
-
+      .eq("tour_id", currentTourId);
     if (error) throw error;
     teamPlayers = data || [];
-
-    // сопоставим selectedRoles по role key (нужен мап role_id -> key)
     const roleIdToKey = {};
     ROLE_OPTIONS.forEach(opt => { if (opt.dbId) roleIdToKey[opt.dbId] = opt.key; });
-
-    // очистим и наполним
     Object.keys(selectedRoles).forEach(k => selectedRoles[k] = null);
     (teamPlayers || []).forEach(tp => {
       const key = roleIdToKey[tp.role_id];
       if (key) selectedRoles[key] = tp.player_id;
     });
-
     logDebug("teamPlayers loaded for current tour:", currentTourId, selectedRoles);
   } catch (err) {
     console.error("Ошибка загрузки team_players:", err);
   }
 }
-/* ========== Рисуем roster (слоты) ========== */
+
 function renderRoster() {
   ROLE_OPTIONS.forEach(opt => {
     const slot = document.getElementById(`slot-${opt.key}`);
     if (!slot) return;
-
-    // пометим roleId в data
     if (opt.dbId) slot.dataset.roleId = opt.dbId;
     slot.dataset.roleKey = opt.key;
-
-    // 🔑 очистим слот перед новой отрисовкой
     slot.innerHTML = "";
-
     const playerId = selectedRoles[opt.key];
-
     if (!playerId) {
       const empty = document.createElement("div");
       empty.className = "empty-slot";
@@ -324,8 +234,6 @@ function renderRoster() {
       slot.appendChild(name);
       return;
     }
-
-    // если игрок назначен — найдём данные игрока
     const pl = players.find(x => String(x.id) === String(playerId));
     const img = document.createElement("img");
     img.src = pl?.photo || DEFAULT_AVATAR;
@@ -333,74 +241,56 @@ function renderRoster() {
     const name = document.createElement("div");
     name.className = "role-name";
     name.textContent = opt.label;
-
     slot.appendChild(img);
     slot.appendChild(name);
   });
 }
+
 async function renderTeamHistory() {
   if (!ensureSupabase()) return;
   if (!currentUserTeamId) return;
-
   try {
-    // грузим все составы пользователя с привязкой к туру
     const { data, error } = await supabase
       .from("team_players")
       .select("tour_id, player_id, role_id, players(name, photo)")
       .eq("team_id", currentUserTeamId)
       .order("tour_id", { ascending: true });
-
     if (error) throw error;
-
     const historyEl = document.getElementById("team-history");
     historyEl.innerHTML = "";
-
-    // группируем по туру
     const grouped = {};
     data.forEach(row => {
       if (!grouped[row.tour_id]) grouped[row.tour_id] = [];
       grouped[row.tour_id].push(row);
     });
-
-    // отрисовываем блоки
     Object.keys(grouped).forEach(tourId => {
       const block = document.createElement("div");
       block.className = "tour-block";
-
       const title = document.createElement("h3");
       title.textContent = `Тур ${tourId}`;
       block.appendChild(title);
-
       const list = document.createElement("div");
       list.className = "players-list";
-
       grouped[tourId].forEach(p => {
         const playerDiv = document.createElement("div");
         playerDiv.className = "player-card";
-
         const img = document.createElement("img");
         img.src = p.players?.photo || DEFAULT_AVATAR;
         img.alt = p.players?.name || "Player";
-
         const name = document.createElement("span");
         name.textContent = p.players?.name || "Неизвестный";
-
         playerDiv.appendChild(img);
         playerDiv.appendChild(name);
         list.appendChild(playerDiv);
       });
-
       block.appendChild(list);
       historyEl.appendChild(block);
     });
-
   } catch (err) {
     console.error("Ошибка загрузки истории состава:", err);
   }
 }
 
-
-/* ========== Бюджет ========== */
 function getSpentCoins(nextMap = null) {
   const map = nextMap || selectedRoles;
   const ids = new Set(Object.values(map).filter(Boolean));
@@ -411,12 +301,12 @@ function getSpentCoins(nextMap = null) {
   });
   return total;
 }
+
 function updateBudgetDisplay() {
   const spentEl = document.getElementById("spent-money");
   if (spentEl) spentEl.textContent = String(getSpentCoins());
 }
 
-/* ========== Пагинация и таблица игроков ========== */
 function getFilteredAndSortedPlayers() {
   const country = (document.getElementById("filter-country")?.value || "").trim();
   const pos = (document.getElementById("filter-pos")?.value || "").trim();
@@ -424,10 +314,7 @@ function getFilteredAndSortedPlayers() {
   let list = Array.isArray(players) ? [...players] : [];
   if (country) list = list.filter(p => (p.country || "").toLowerCase() === country.toLowerCase());
   if (pos) list = list.filter(p => (p.position || p.pos || "").toUpperCase() === pos.toUpperCase());
-
-  // Фильтрация скрытых игроков
   list = list.filter(p => !hiddenPlayerIds.includes(p.id));
-
   if (sort) {
     switch (sort) {
       case "price-asc": list.sort((a,b) => (a.price||0) - (b.price||0)); break;
@@ -440,7 +327,6 @@ function getFilteredAndSortedPlayers() {
   return list;
 }
 
-
 function populateCountryFilter() {
   const sel = document.getElementById("filter-country");
   if (!sel) return;
@@ -452,18 +338,14 @@ function renderPlayersTable() {
   const tbody = document.getElementById("players-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
-
   const filtered = getFilteredAndSortedPlayers();
   const totalPages = Math.max(1, Math.ceil(filtered.length / playersPerPage));
   if (currentPage > totalPages) currentPage = totalPages;
-
   const start = (currentPage - 1) * playersPerPage;
   const pagePlayers = filtered.slice(start, start + playersPerPage);
-
   pagePlayers.forEach(p => {
     const tr = document.createElement("tr");
     tr.dataset.playerId = p.id;
-    // строки более узкие — уменьшим padding через CSS (см style.css)
     tr.innerHTML = `
       <td><button class="add-btn" data-id="${p.id}" aria-label="Add ${p.name}">+</button></td>
       <td>${p.photo ? `<img src="${p.photo}" alt="${p.name}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` : ''}</td>
@@ -479,11 +361,7 @@ function renderPlayersTable() {
     `;
     tbody.appendChild(tr);
   });
-
-  // делегирование кликов на "+" — ссылка на initAddButtonDelegation, но чтобы работало сразу:
   initAddButtonDelegation();
-
-  // обновляем страницу и кнопки
   const pageInfo = document.getElementById("page-info");
   if (pageInfo) pageInfo.textContent = `${currentPage} / ${totalPages}`;
   const prevBtn = document.getElementById("prev-page");
@@ -492,7 +370,6 @@ function renderPlayersTable() {
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
-/* пагинация кнопки */
 function initPaginationButtons() {
   const prev = document.getElementById("prev-page");
   const next = document.getElementById("next-page");
@@ -506,11 +383,9 @@ function initPaginationButtons() {
   });
 }
 
-/* ========== Делегирование кнопок "+" (создаёт селектор ролей) ========== */
 function initAddButtonDelegation() {
   const tbody = document.getElementById("players-tbody");
   if (!tbody) return;
-  // удалить предыдущий обработчик чтобы не дублировать
   tbody.replaceWith(tbody.cloneNode(true));
   const newTbody = document.getElementById("players-tbody");
   newTbody.addEventListener("click", (e) => {
@@ -523,49 +398,37 @@ function initAddButtonDelegation() {
   });
 }
 
-/* ========== Назначение игрока в team_players (вставка/обновление) ========== */
-/* roleDbId - целое число (roles.id) */
 async function assignPlayerToRoleDb(teamId, playerId, roleDbId) {
   if (!ensureSupabase()) return false;
   if (!teamId || !playerId || !roleDbId || !currentTourId) {
     console.warn("assignPlayerToRoleDb: отсутствуют аргументы", { teamId, playerId, roleDbId, currentTourId });
     return false;
   }
-
   try {
-    // ищем существующую строку для этой team + role + tour
     const { data: existing, error: fetchErr } = await supabase
       .from("team_players")
       .select("id,player_id")
       .eq("team_id", teamId)
       .eq("role_id", roleDbId)
-      .eq("tour_id", currentTourId) // фильтр по туру
+      .eq("tour_id", currentTourId)
       .limit(1)
       .maybeSingle();
-
     if (fetchErr) throw fetchErr;
-
     if (existing && existing.id) {
-      // обновляем player_id
       const { error: updErr } = await supabase
         .from("team_players")
         .update({ player_id: playerId })
         .eq("id", existing.id);
-
       if (updErr) throw updErr;
     } else {
-      // вставляем новую запись
       const { error: insErr } = await supabase
         .from("team_players")
-        .insert([{ team_id: teamId, player_id: playerId, role_id: roleDbId, tour_id: currentTourId }]); // указываем тур
-
+        .insert([{ team_id: teamId, player_id: playerId, role_id: roleDbId, tour_id: currentTourId }]);
       if (insErr) throw insErr;
     }
-
-    // обновим локально selectedRoles и перерисуем roster
     const roleOpt = ROLE_OPTIONS.find(o => o.dbId === roleDbId);
     if (roleOpt) selectedRoles[roleOpt.key] = playerId;
-    await loadTeamPlayers(); // подгрузим актуальные данные с сервера
+    await loadTeamPlayers();
     renderRoster();
     updateBudgetDisplay();
     return true;
@@ -575,47 +438,36 @@ async function assignPlayerToRoleDb(teamId, playerId, roleDbId) {
   }
 }
 
-
-/* ========== Круговой селектор ролей (UI) ========== */
 let selectorOverlay = null;
 let selectorEl = null;
 
 function openRoleSelector(triggerBtn, player) {
   closeRoleSelector();
-
   selectorOverlay = document.createElement("div");
   selectorOverlay.className = "role-overlay";
   selectorOverlay.addEventListener("click", closeRoleSelector);
-
   selectorEl = document.createElement("div");
   selectorEl.className = "role-selector";
   selectorEl.setAttribute("role", "dialog");
   selectorEl.setAttribute("aria-label", "Выбор роли");
   selectorEl.style.position = "fixed";
-
-  // позиционирование рядом с кнопкой
   const rect = triggerBtn.getBoundingClientRect();
   const size = 220;
   let left = rect.left + rect.width / 2 - size / 2;
   let top  = rect.top  + rect.height / 2 - size / 2;
   left = Math.max(8, Math.min(left, window.innerWidth - size - 8));
   top  = Math.max(8, Math.min(top, window.innerHeight - size - 8));
-
   selectorEl.style.left = `${left}px`;
   selectorEl.style.top  = `${top}px`;
   selectorEl.style.width = `${size}px`;
   selectorEl.style.height = `${size}px`;
-
-  // показываем только роли, которые допустимы по цене
   const rolesToShow = ROLE_OPTIONS.filter(r => !(r.key === "Young" && player.price > (r.maxPrice || 7)));
-
   const R = 80;
   rolesToShow.forEach((opt, i) => {
     const angle = (i / rolesToShow.length) * (Math.PI * 2) - Math.PI / 2;
     const bw = 90, bh = 40;
     const x = size / 2 + R * Math.cos(angle) - bw / 2;
     const y = size / 2 + R * Math.sin(angle) - bh / 2;
-
     const b = document.createElement("button");
     b.textContent = opt.label;
     b.style.position = "absolute";
@@ -623,22 +475,16 @@ function openRoleSelector(triggerBtn, player) {
     b.style.top  = `${y}px`;
     b.addEventListener("click", async (ev) => {
       ev.stopPropagation();
-
-      // проверяем, есть ли dbId для роли
       if (!opt.dbId) {
         alert("Эта роль ещё не сконфигурирована в базе (roles). Обновите роли в админке.");
         return;
       }
-
-      // Проверка бюджета локально: допустимая замена?
       const next = { ...selectedRoles, [opt.key]: player.id };
       const nextSpent = getSpentCoins(next);
       if (nextSpent > BUDGET_CAP) {
         alert(`Превышен бюджет (${nextSpent}$). Лимит ${BUDGET_CAP}$.`);
         return;
       }
-
-      // назначаем в БД (вставка/обновление)
       const ok = await assignPlayerToRoleDb(currentUserTeamId, player.id, opt.dbId);
       if (ok) {
         closeRoleSelector();
@@ -646,18 +492,14 @@ function openRoleSelector(triggerBtn, player) {
         alert("Не удалось назначить игрока. Смотрите консоль для ошибок.");
       }
     });
-
     selectorEl.appendChild(b);
   });
-
   document.body.appendChild(selectorOverlay);
   document.body.appendChild(selectorEl);
   requestAnimationFrame(() => {
     selectorOverlay.classList.add("show");
     selectorEl.classList.add("show");
   });
-
-  // закрытие по Esc / resize / scroll
   document.addEventListener("keydown", escCloseOnce);
   window.addEventListener("resize", closeRoleSelector, { once: true });
   window.addEventListener("scroll", closeRoleSelector, { once: true });
@@ -670,10 +512,9 @@ function closeRoleSelector() {
   if (selectorEl) { selectorEl.classList.remove("show"); setTimeout(()=>selectorEl?.remove(),180); selectorEl = null; }
   document.removeEventListener("keydown", escCloseOnce);
 }
-// Сохраняет очки команды в текущем туре
+
 async function saveTeamScore(teamId, totalPoints) {
   if (!ensureSupabase()) return;
-
   const { data, error } = await supabase
     .from("scores")
     .upsert({
@@ -681,30 +522,24 @@ async function saveTeamScore(teamId, totalPoints) {
       tour_id: currentTourId,
       total_points: totalPoints
     }, { onConflict: ['team_id', 'tour_id'] });
-
   if (error) {
     console.error("Ошибка при сохранении очков команды:", error);
   }
 }
 
-// Получает очки всех команд для текущего тура
 async function loadScoresForCurrentTour() {
   if (!ensureSupabase()) return [];
-
   const { data: scores, error } = await supabase
     .from("scores")
     .select("team_id,total_points")
     .eq("tour_id", currentTourId);
-
   if (error) {
     console.error("Ошибка загрузки очков:", error);
     return [];
   }
-
   return scores;
 }
 
-/* ========== Init фильтров / кнопок панели и обработчики ========== */
 function initTableFilters() {
   ["filter-country","filter-pos","filter-sort"].forEach(id => {
     const el = document.getElementById(id);
@@ -717,7 +552,6 @@ function initTableFilters() {
 }
 
 function initParButtons() {
-  // toggle panels (rules/scoring/roster) — поведение как раньше
   document.querySelectorAll(".panel").forEach(p => { p.setAttribute("role","region"); p.setAttribute("aria-hidden","true"); });
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(".par-btn");
@@ -726,8 +560,6 @@ function initParButtons() {
     const targetId = btn.dataset.target;
     const panel = document.getElementById(targetId);
     if (!panel) return;
-
-    // открываем/закрываем
     const isOpen = panel.classList.toggle("show");
     const wrap = btn.closest(".strip-wrapper");
     const strip = wrap?.querySelector(".strip");
@@ -736,8 +568,6 @@ function initParButtons() {
       btn.classList.add("active");
       btn.setAttribute("aria-expanded", "true");
       panel.setAttribute("aria-hidden", "false");
-
-      // специальное поведение: если rules — показываем картинку внутри panel (rules-img)
       if (targetId === "rules-panel") {
         const imgEl = panel.querySelector("#rules-img");
         if (imgEl) {
@@ -747,7 +577,6 @@ function initParButtons() {
           imgEl.style.display = "block";
         }
       }
-
       panel.scrollIntoView({ behavior: "smooth", block: "start" });
     } else {
       strip?.classList.remove("expanded");
@@ -756,8 +585,6 @@ function initParButtons() {
       panel.setAttribute("aria-hidden", "true");
     }
   });
-
-  // открытие по хэшу
   const hashId = location.hash?.slice(1);
   if (hashId) {
     const btn = document.querySelector(`.par-btn[data-target="${hashId}"]`);
@@ -765,15 +592,8 @@ function initParButtons() {
   }
 }
 
-/* ========== Сохранение состава (кнопка "Сохранить состав") ========== */
-/* Эта кнопка в UI : собирает текущие selectedRoles и записывает их в team_players:
-   для каждой роли — создаёт/обновляет запись team_players (team_id, player_id, role_id).
-   После успешного сохранения делает reload teamPlayers/renderRoster.
-*/
 async function saveRosterToDb() {
   if (!currentUserTeamId) { alert("Невозможно сохранить — команда не найдена."); return; }
-
-  // для каждой роли, если назначен игрок — вызываем assignPlayerToRoleDb
   for (const opt of ROLE_OPTIONS) {
     const roleId = opt.dbId;
     if (!roleId) continue;
@@ -784,23 +604,19 @@ async function saveRosterToDb() {
   alert("Состав сохранён в базе.");
 }
 
-/* ========== Инициализация страницы ========== */
 document.addEventListener("DOMContentLoaded", async () => {
-  // Проверка авторизации
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
     window.location.href = "index.html";
     return;
   }
   try {
-    // Берём название команды пользователя из таблицы user_teams
     const { data: team, error: teamError } = await supabase
       .from("user_teams")
       .select("team_name")
       .eq("user_id", user.id)
       .single();
     if (teamError) throw teamError;
-    // Обновляем элементы на странице
     const welcomeEl = document.getElementById("welcome-message");
     const teamEl = document.getElementById("team-name");
     const headerTitle = document.querySelector("header h1");
@@ -818,19 +634,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Ошибка при получении данных пользователя:", err);
   }
   if (!ensureSupabase()) return;
-
-  // Загрузка всех данных с пагинацией
   const dataLoaded = await loadAllData();
   if (!dataLoaded) {
     console.error("Не удалось загрузить данные.");
     return;
   }
-
-  // Используем кэшированные данные
   players = cachedData.players;
   rolesFromDb = cachedData.roles;
-
-  // Далее ваша инициализация
   await loadRolesFromDb();
   await loadCurrentUserAndTeam();
   await loadCurrentTour();
@@ -858,27 +668,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
